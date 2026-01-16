@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+.dist/
+.build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Testing
+coverage/
+.nyc_output/
+.pytest_cache/
+
+# Misc
+*.log
+.cache/
+temp/
+tmp/
+
+# Legacy code (not needed in containers)
+legacy/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore

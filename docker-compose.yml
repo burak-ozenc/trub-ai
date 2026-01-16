@@ -1,0 +1,101 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: trubai-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-trubai_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trubai_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-trubai}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trubai_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - trubai-network
+
+  # Node.js Backend API
+  backend:
+    build:
+      context: ./v2/backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: trubai-backend
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${BACKEND_PORT:-3000}
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      AUDIO_SERVICE_URL: http://audio-service:8001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./v2/backend/src:/app/src
+      - ./v2/backend/package.json:/app/package.json
+      - backend-node-modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - trubai-network
+    command: npm run dev
+
+  # Python Audio Service
+  audio-service:
+    build:
+      context: ./v2/audio-service
+      dockerfile: Dockerfile
+    container_name: trubai-audio-service
+    environment:
+      PORT: ${AUDIO_SERVICE_PORT:-8001}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./v2/audio-service:/app
+      - audio-service-cache:/root/.cache
+    networks:
+      - trubai-network
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./v2/frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: trubai-frontend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:3000}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./v2/frontend/src:/app/src
+      - ./v2/frontend/public:/app/public
+      - ./v2/frontend/index.html:/app/index.html
+      - ./v2/frontend/package.json:/app/package.json
+      - ./v2/frontend/vite.config.ts:/app/vite.config.ts
+      - ./v2/frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./v2/frontend/tsconfig.json:/app/tsconfig.json
+      - frontend-node-modules:/app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - trubai-network
+    command: npm run dev
+
+networks:
+  trubai-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  backend-node-modules:
+  frontend-node-modules:
+  audio-service-cache:
