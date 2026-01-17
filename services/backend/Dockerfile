@@ -3,6 +3,9 @@ FROM node:20-alpine AS development
 
 WORKDIR /app
 
+# Install build dependencies for native modules (bcrypt)
+RUN apk add --no-cache python3 make g++
+
 # Copy package files
 COPY package*.json ./
 
@@ -22,6 +25,9 @@ CMD ["npm", "run", "dev"]
 FROM node:20-alpine AS production
 
 WORKDIR /app
+
+# Install build dependencies for native modules (bcrypt)
+RUN apk add --no-cache python3 make g++
 
 # Copy package files
 COPY package*.json ./

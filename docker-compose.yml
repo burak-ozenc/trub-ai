@@ -22,7 +22,7 @@ services:
   # Node.js Backend API
   backend:
     build:
-      context: ./v2/backend
+      context: ./services/backend
       dockerfile: Dockerfile
       target: development
     container_name: trubai-backend
@@ -35,8 +35,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./v2/backend/src:/app/src
-      - ./v2/backend/package.json:/app/package.json
+      - ./services/backend/src:/app/src
+      - ./services/backend/package.json:/app/package.json
       - backend-node-modules:/app/node_modules
     depends_on:
       postgres:
@@ -48,7 +48,7 @@ services:
   # Python Audio Service
   audio-service:
     build:
-      context: ./v2/audio-service
+      context: ./services/audio-service
       dockerfile: Dockerfile
     container_name: trubai-audio-service
     environment:
@@ -57,7 +57,7 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ./v2/audio-service:/app
+      - ./services/audio-service:/app
       - audio-service-cache:/root/.cache
     networks:
       - trubai-network
@@ -66,7 +66,7 @@ services:
   # React Frontend
   frontend:
     build:
-      context: ./v2/frontend
+      context: ./services/frontend
       dockerfile: Dockerfile
       target: development
     container_name: trubai-frontend
@@ -76,13 +76,13 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./v2/frontend/src:/app/src
-      - ./v2/frontend/public:/app/public
-      - ./v2/frontend/index.html:/app/index.html
-      - ./v2/frontend/package.json:/app/package.json
-      - ./v2/frontend/vite.config.ts:/app/vite.config.ts
-      - ./v2/frontend/tailwind.config.js:/app/tailwind.config.js
-      - ./v2/frontend/tsconfig.json:/app/tsconfig.json
+      - ./services/frontend/src:/app/src
+      - ./services/frontend/public:/app/public
+      - ./services/frontend/index.html:/app/index.html
+      - ./services/frontend/package.json:/app/package.json
+      - ./services/frontend/vite.config.ts:/app/vite.config.ts
+      - ./services/frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./services/frontend/tsconfig.json:/app/tsconfig.json
       - frontend-node-modules:/app/node_modules
     depends_on:
       - backend
