@@ -231,9 +231,11 @@ export class SongController {
   getMidiFile = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id, difficulty } = req.params;
+      console.log(`🎵 MIDI request: songId=${id}, difficulty=${difficulty}`);
 
       // Validate difficulty
       if (!Object.values(Difficulty).includes(difficulty as Difficulty)) {
+        console.error('❌ Invalid difficulty:', difficulty);
         res.status(400).json({
           error: 'Bad Request',
           message: 'Invalid difficulty level'
@@ -243,12 +245,14 @@ export class SongController {
 
       const song = await this.songService.getSongById(parseInt(id));
       if (!song) {
+        console.error('❌ Song not found:', id);
         res.status(404).json({
           error: 'Not Found',
           message: 'Song not found'
         });
         return;
       }
+      console.log('✅ Song found:', song.title);
 
       // Get MIDI path for difficulty
       const songEntity = await this.songService['songRepository'].findOne({
@@ -256,6 +260,7 @@ export class SongController {
       });
 
       if (!songEntity) {
+        console.error('❌ Song entity not found:', id);
         res.status(404).json({
           error: 'Not Found',
           message: 'Song not found'
@@ -264,7 +269,10 @@ export class SongController {
       }
 
       const midiPath = this.songService.getMidiPath(songEntity, difficulty as Difficulty);
+      console.log('📁 MIDI path from DB:', midiPath);
+
       if (!midiPath) {
+        console.error('❌ MIDI path null for difficulty:', difficulty);
         res.status(404).json({
           error: 'Not Found',
           message: `MIDI file not available for ${difficulty} difficulty`
@@ -275,18 +283,33 @@ export class SongController {
       // Construct full file path
       const dataDir = process.env.DATA_DIR || path.join(__dirname, '../../data');
       const filePath = path.join(dataDir, 'songs', midiPath);
+      console.log('🗂️  Full MIDI file path:', filePath);
+      console.log('📂 __dirname:', __dirname);
+      console.log('📂 dataDir:', dataDir);
 
       // Check if file exists
       if (!fs.existsSync(filePath)) {
+        console.error('❌ MIDI file not found on filesystem:', filePath);
         res.status(404).json({
           error: 'Not Found',
-          message: 'MIDI file not found on server'
+          message: 'MIDI file not found on server',
+          debug: {
+            filePath,
+            dataDir,
+            midiPath,
+            __dirname
+          }
         });
         return;
       }
 
+      console.log('✅ MIDI file exists, streaming...');
+      const stats = fs.statSync(filePath);
+      console.log('📊 File size:', stats.size, 'bytes');
+
       // Set headers for MIDI file
       res.setHeader('Content-Type', 'audio/midi');
+      res.setHeader('Content-Length', stats.size);
       res.setHeader('Content-Disposition', `inline; filename="${path.basename(filePath)}"`);
 
       // Stream the file
@@ -294,7 +317,7 @@ export class SongController {
       stream.pipe(res);
 
       stream.on('error', (error) => {
-        console.error('Error streaming MIDI file:', error);
+        console.error('❌ Error streaming MIDI file:', error);
         if (!res.headersSent) {
           res.status(500).json({
             error: 'Internal Server Error',
@@ -302,11 +325,16 @@ export class SongController {
           });
         }
       });
+
+      stream.on('end', () => {
+        console.log('✅ MIDI file streamed successfully');
+      });
     } catch (error) {
-      console.error('Error getting MIDI file:', error);
+      console.error('❌ Error getting MIDI file:', error);
       res.status(500).json({
         error: 'Internal Server Error',
-        message: 'Failed to get MIDI file'
+        message: 'Failed to get MIDI file',
+        debug: process.env.NODE_ENV === 'development' ? error : undefined
       });
     }
   };
