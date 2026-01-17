@@ -4,6 +4,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './database/data-source';
 import authRoutes from './routes/auth.routes';
+import songRoutes from './routes/song.routes';
+import playAlongRoutes from './routes/play-along.routes';
 
 // Load environment variables
 dotenv.config();
@@ -44,6 +46,8 @@ app.get('/', (_req: Request, res: Response) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/songs', songRoutes);
+app.use('/api/play-along', playAlongRoutes);
 
 // API routes placeholder
 app.get('/api', (_req: Request, res: Response) => {
@@ -53,6 +57,12 @@ app.get('/api', (_req: Request, res: Response) => {
       '/api/auth/register - POST - Register new user',
       '/api/auth/login - POST - Login',
       '/api/auth/me - GET - Get current user (protected)',
+      '/api/songs - GET - List all songs',
+      '/api/songs/:id - GET - Get song details',
+      '/api/songs/:id/audio/:difficulty - GET - Stream backing track',
+      '/api/songs/:id/midi/:difficulty - GET - Stream MIDI file',
+      '/api/songs/:id/sheet-music/:difficulty - GET - Stream sheet music PDF',
+      '/api/play-along - Coming soon',
       '/api/users - Coming soon',
       '/api/recordings - Coming soon',
       '/api/practice - Coming soon'
@@ -79,6 +89,8 @@ const startServer = async () => {
       console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
       console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth`);
+      console.log(`🎵 Song endpoints: http://localhost:${PORT}/api/songs`);
+      console.log(`🎸 Play-along endpoints: http://localhost:${PORT}/api/play-along`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
