@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import PracticeTools from './pages/PracticeTools';
+import Songs from './pages/Songs';
 import PlayAlongPage from './pages/PlayAlongPage';
 
 function App() {
@@ -27,6 +28,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <PracticeTools />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/songs"
+            element={
+              <ProtectedRoute>
+                <Songs />
               </ProtectedRoute>
             }
           />

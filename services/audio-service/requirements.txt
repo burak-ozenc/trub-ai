@@ -18,3 +18,6 @@ pydantic==2.5.3
 
 # Environment management
 python-dotenv==1.0.0
+
+# Torch for deep learning
+torch==2.6.0

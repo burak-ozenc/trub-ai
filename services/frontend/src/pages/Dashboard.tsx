@@ -52,16 +52,20 @@ export default function Dashboard() {
                 <span className="text-sm text-blue-600 font-medium">Open Tools →</span>
               </button>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <button
+                onClick={() => navigate('/songs')}
+                className="bg-green-50 border border-green-200 rounded-lg p-6 hover:bg-green-100 transition-colors text-left"
+              >
                 <h3 className="text-lg font-semibold text-green-900 mb-2">
-                  Play Along
+                  🎼 Play Along
                 </h3>
-                <p className="text-gray-600">Practice with backing tracks</p>
-              </div>
+                <p className="text-gray-600 mb-3">Practice with backing tracks</p>
+                <span className="text-sm text-green-600 font-medium">Browse Songs →</span>
+              </button>
 
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-purple-900 mb-2">
-                  Audio Analysis
+                  🎤 Audio Analysis
                 </h3>
                 <p className="text-gray-600">Get AI-powered feedback</p>
               </div>
