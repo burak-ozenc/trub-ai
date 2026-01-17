@@ -124,11 +124,40 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to load MIDI: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('❌ HTTP Error:', response.status, response.statusText);
+        console.error('❌ Response body:', errorText.substring(0, 200));
+        throw new Error(`HTTP ${response.status}: ${response.statusText}. MIDI file may not exist for this song/difficulty.`);
+      }
+
+      // Check content type
+      const contentType = response.headers.get('content-type');
+      console.log('📄 Content-Type:', contentType);
+
+      if (contentType && contentType.includes('text/html')) {
+        throw new Error('Received HTML instead of MIDI file. The MIDI file may not exist on the server.');
       }
 
       const blob = await response.blob();
+      console.log('📥 MIDI file fetched, size:', blob.size, 'type:', blob.type);
+
+      // Validate blob size
+      if (blob.size < 100) {
+        throw new Error('MIDI file is too small. It may be corrupted or missing.');
+      }
+
       const arrayBuffer = await blob.arrayBuffer();
+      console.log('📂 MIDI file converted to ArrayBuffer, byteLength:', arrayBuffer.byteLength);
+
+      // Validate MIDI header
+      const view = new DataView(arrayBuffer);
+      const header = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
+      console.log('🔍 File header:', header);
+
+      if (header !== 'MThd') {
+        throw new Error(`Invalid MIDI file. Header is "${header}" but expected "MThd". The file may not be a valid MIDI file.`);
+      }
+
       const midi = new Midi(arrayBuffer);
 
       console.log('✅ MIDI loaded:', {
@@ -136,6 +165,10 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
         duration: midi.duration,
         notes: midi.tracks[0]?.notes.length
       });
+
+      if (midi.tracks.length === 0 || !midi.tracks[0]?.notes || midi.tracks[0].notes.length === 0) {
+        throw new Error('MIDI file has no notes. The file may be empty or corrupted.');
+      }
 
       const vexFlowData = convertMidiToVexFlow(midi);
 

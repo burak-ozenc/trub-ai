@@ -182,6 +182,7 @@ export class SongController {
       // Construct full file path
       const dataDir = process.env.DATA_DIR || path.join(__dirname, '../../data');
       const filePath = path.join(dataDir, 'songs', backingTrackPath);
+      console.log('filePath:', filePath)
 
       // Check if file exists
       if (!fs.existsSync(filePath)) {
