@@ -11,10 +11,6 @@ import playAlongRoutes from './routes/play-along.routes';
 // Load environment variables
 dotenv.config();
 
-console.log("POSTGRES_HOST =", process.env.POSTGRES_HOST);
-console.log("DATABASE_URL =", process.env.DATABASE_URL);
-
-
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;

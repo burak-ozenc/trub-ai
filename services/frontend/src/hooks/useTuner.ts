@@ -1,15 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { UseTunerReturn, SkillLevel } from '../types/tools';
 import { MeydaFeatures, MeydaAnalyzer } from '../types/meyda';
+import AudioContextService from '../services/audioContextService';
+import * as Meyda from 'meyda';
 
-// Try to import Meyda, but have fallback
-let Meyda: any;
-try {
-  Meyda = require('meyda');
-  console.log('✅ Meyda loaded successfully');
-} catch (e) {
-  console.warn('⚠️ Meyda not available, using fallback detection');
-}
+console.log('✅ Meyda imported:', Meyda);
 
 const useTuner = (skillLevel: SkillLevel = 'intermediate'): UseTunerReturn => {
   const [isActive, setIsActive] = useState(false);
@@ -346,10 +341,19 @@ const useTuner = (skillLevel: SkillLevel = 'intermediate'): UseTunerReturn => {
 
   const start = useCallback(async () => {
     try {
+      console.log('🎤 Starting tuner...');
+
+      // Use shared AudioContext
       if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = AudioContextService.getContext();
+        console.log('🎵 Using shared AudioContext');
       }
 
+      // Ensure AudioContext is running before proceeding
+      await AudioContextService.ensureRunning();
+      console.log('🎤 AudioContext state:', audioContextRef.current.state);
+
+      console.log('🎤 Requesting microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
@@ -359,21 +363,28 @@ const useTuner = (skillLevel: SkillLevel = 'intermediate'): UseTunerReturn => {
         }
       });
       streamRef.current = stream;
+      console.log('✅ Microphone access granted');
 
       const source = audioContextRef.current.createMediaStreamSource(stream);
+      console.log('✅ Media stream source created');
 
       const analyser = audioContextRef.current.createAnalyser();
       analyser.fftSize = 8192;
       analyser.smoothingTimeConstant = 0;
       analyserRef.current = analyser;
+      console.log('✅ Analyser node created (FFT size: 8192)');
 
       source.connect(analyser);
+      console.log('✅ Source connected to analyser');
 
       console.log('🔧 Initializing Meyda...');
-      console.log('Meyda available?', typeof Meyda !== 'undefined');
+      console.log('Meyda available?', Meyda && typeof Meyda.createMeydaAnalyzer === 'function');
 
-      if (typeof Meyda !== 'undefined') {
+      if (Meyda && typeof Meyda.createMeydaAnalyzer === 'function') {
         try {
+          // Ensure AudioContext is still running before creating Meyda
+          await AudioContextService.ensureRunning();
+
           meydaAnalyzerRef.current = Meyda.createMeydaAnalyzer({
             audioContext: audioContextRef.current,
             source: source,
@@ -384,9 +395,22 @@ const useTuner = (skillLevel: SkillLevel = 'intermediate'): UseTunerReturn => {
 
           console.log('✅ Meyda analyzer created');
           meydaAnalyzerRef.current.start();
-          console.log('✅ Meyda analyzer started');
+          console.log('✅ Meyda analyzer started - should now receive audio data');
+
+          // Verify Meyda is working after 1 second
+          setTimeout(() => {
+            console.log('🔍 Verification check - has Meyda fired callback?');
+            console.log('   isDetecting:', isDetecting);
+            console.log('   audioLevel:', audioLevel);
+            if (!isDetecting && audioLevel === 0) {
+              console.warn('⚠️ Meyda may not be receiving audio data - fallback should activate');
+            }
+          }, 1000);
         } catch (error) {
           console.error('❌ Meyda initialization error:', error);
+          console.log('⚠️ Falling back to manual detection loop');
+          lastUpdateTimeRef.current = performance.now();
+          animationFrameRef.current = requestAnimationFrame(fallbackDetectionLoop);
         }
       } else {
         console.warn('❌ Meyda library not found! Using fallback detection');
@@ -402,10 +426,10 @@ const useTuner = (skillLevel: SkillLevel = 'intermediate'): UseTunerReturn => {
 
       setIsActive(true);
 
-      console.log('✅ Tuner started');
-      console.log('📊 Audio context state:', audioContextRef.current.state);
+      console.log('✅ Tuner started successfully');
+      console.log('📊 AudioContext state:', audioContextRef.current.state);
       console.log('📊 Sample rate:', audioContextRef.current.sampleRate);
-      console.log('📊 Using:', Meyda ? 'Meyda + YIN' : 'Fallback YIN');
+      console.log('📊 Using:', Meyda && typeof Meyda.createMeydaAnalyzer === 'function' ? 'Meyda + YIN' : 'Fallback YIN');
     } catch (error) {
       console.error('❌ Error starting tuner:', error);
       alert('Could not access microphone. Please allow microphone access and refresh the page.');

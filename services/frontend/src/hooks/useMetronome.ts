@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { UseMetronomeReturn } from '../types/tools';
+import AudioContextService from '../services/audioContextService';
 
 const useMetronome = (): UseMetronomeReturn => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -11,10 +12,11 @@ const useMetronome = (): UseMetronomeReturn => {
   const schedulerIdRef = useRef<NodeJS.Timeout | null>(null);
   const currentBpmRef = useRef(120);
 
-  // Initialize Audio Context
+  // Initialize Audio Context (using shared service)
   useEffect(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = AudioContextService.getContext();
+      console.log('🥁 Metronome using shared AudioContext');
     }
   }, []);
 
