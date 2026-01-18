@@ -297,24 +297,30 @@ Before deploying:
 
 ## Next Steps
 
+
 ### Phase 2: Core Backend
-- [ ] User authentication (register/login)
-- [ ] Database models with TypeORM
-- [ ] JWT middleware
-- [ ] CRUD endpoints
+- [x] User authentication (register/login)
+- [x] Database models with TypeORM
+- [x] JWT middleware
+- [x] CRUD endpoints
 
 ### Phase 3: Audio Service
-- [ ] Audio upload endpoint
-- [ ] Basic audio processing
-- [ ] Integration with backend
+- [x] Audio upload endpoint
+- [x] Basic audio processing
+- [x] Integration with backend
 
 ### Phase 4: Frontend
-- [ ] Authentication UI
-- [ ] Dashboard layout
-- [ ] Audio recording component
-- [ ] Practice session UI
+- [x] Authentication UI
+- [x] Dashboard layout
+- [x] Audio recording component
 
-### Phase 5: Integration
+### Phase 5: Improvements
+- [ ] Note validation improvements
+- [ ] UI/UX improvements on Play Along Feature
+- [ ] Song library enrichments
+- - [ ] Practice session UI
+
+### Phase 6: Integration
 - [ ] End-to-end testing
 - [ ] WebSocket integration
 - [ ] File upload flow
