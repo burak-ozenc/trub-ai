@@ -318,7 +318,7 @@ Before deploying:
 - [ ] Note validation improvements
 - [ ] UI/UX improvements on Play Along Feature
 - [ ] Song library enrichments
-- - [ ] Practice session UI
+- [ ] Practice session UI
 
 ### Phase 6: Integration
 - [ ] End-to-end testing
