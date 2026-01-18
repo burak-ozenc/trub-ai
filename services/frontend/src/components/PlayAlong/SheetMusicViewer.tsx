@@ -3,6 +3,7 @@ import { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } from 'vexflo
 import { Midi } from '@tonejs/midi';
 import { usePlaybackStore } from '../../stores/playbackStore';
 import { convertMidiToVexFlow, convertMidiNoteToExpected } from '../../utils/midiHelpers';
+import { getSongMidi } from '../../services/playAlongService';
 import type {
   Difficulty,
   VexFlowMidiData,
@@ -116,35 +117,9 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
     try {
       console.log('🎼 Loading MIDI for song:', songId, 'difficulty:', difficulty);
 
-      // Fetch MIDI file from backend
-      const response = await fetch(`/api/songs/${songId}/midi/${difficulty}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ HTTP Error:', response.status, response.statusText);
-        console.error('❌ Response body:', errorText.substring(0, 200));
-        throw new Error(`HTTP ${response.status}: ${response.statusText}. MIDI file may not exist for this song/difficulty.`);
-      }
-
-      // Check content type
-      const contentType = response.headers.get('content-type');
-      console.log('📄 Content-Type:', contentType);
-
-      if (contentType && contentType.includes('text/html')) {
-        throw new Error('Received HTML instead of MIDI file. The MIDI file may not exist on the server.');
-      }
-
-      const blob = await response.blob();
+      // Fetch MIDI file from backend using API service
+      const blob = await getSongMidi(songId, difficulty);
       console.log('📥 MIDI file fetched, size:', blob.size, 'type:', blob.type);
-
-      // Validate blob size
-      if (blob.size < 100) {
-        throw new Error('MIDI file is too small. It may be corrupted or missing.');
-      }
 
       const arrayBuffer = await blob.arrayBuffer();
       console.log('📂 MIDI file converted to ArrayBuffer, byteLength:', arrayBuffer.byteLength);

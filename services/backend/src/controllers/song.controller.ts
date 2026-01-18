@@ -230,6 +230,7 @@ export class SongController {
    */
   getMidiFile = async (req: Request, res: Response): Promise<void> => {
     try {
+      console.log('it hits the endpoint')
       const { id, difficulty } = req.params;
       console.log(`🎵 MIDI request: songId=${id}, difficulty=${difficulty}`);
 
