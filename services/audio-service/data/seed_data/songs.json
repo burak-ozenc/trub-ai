@@ -1,0 +1,11 @@
+{
+  "songs": [
+    {
+      "title": "Test Title",
+      "composer": "Test Composer",
+      "genre": "jazz",
+      "midi_file": "looperman-in-my-feelings-part-3.midi",
+      "is_public_domain": true
+    }
+  ]
+}

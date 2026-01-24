@@ -80,7 +80,6 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
             console.log('🎨 Coloring notes, results:', noteResults.length);
             colorNotesBasedOnResults();
         }
-        // eslint-disable-next-line
     }, [noteResults]);
 
     // Highlight current note/rest
@@ -89,23 +88,20 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
             console.log('🎯 Highlighting note:', currentNoteIndex);
             highlightCurrentNote();
         }
-        // eslint-disable-next-line  
     }, [currentNoteIndex]);
 
     // Update visual feedback
     useEffect(() => {
-        if (isPlaying && noteElementsRef.current.length > 0) {
+        if (noteElementsRef.current.length > 0) {
             updateVisualFeedback();
         }
-        // eslint-disable-next-line
-    }, [currentNoteIndex, currentTime, noteStartTime, isPlaying, currentNoteResult]);
+    }, [currentTime, isPlaying, currentNoteIndex, currentNoteResult]);
 
     // Handle auto-scroll
     useEffect(() => {
         if (isPlaying && autoScroll && currentNoteIndex >= 0) {
             scrollToCurrentNote();
         }
-        // eslint-disable-next-line
     }, [currentNoteIndex, isPlaying, autoScroll]);
 
     /**
