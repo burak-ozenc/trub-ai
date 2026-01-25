@@ -133,16 +133,34 @@ const PlayAlongPage: React.FC = () => {
         }
     };
 
-    const handleMidiLoaded = (notes: VexFlowNote[]) => {
-        const converted = notes.map((note, index) => convertMidiNoteToExpected(note, index));
+    const handleMidiLoaded = (events: VexFlowNote[]) => {
+        // Convert events (notes + rests) to expected format
+        const converted = events.map((event, index) => convertMidiNoteToExpected(event, index));
         setExpectedNotes(converted);
         const totalDuration = midiPlayer.duration || converted[converted.length - 1]?.endTime || 180;
+
+        // Count only actual notes (not rests) for stats
+        const noteCount = converted.filter(e => !e.isRest).length;
+
+        console.log('📋 MIDI Loaded - Expected Events:', {
+            totalEvents: converted.length,
+            notes: noteCount,
+            rests: converted.filter(e => e.isRest).length,
+            firstEvent: converted[0] ? {
+                pitch: converted[0].pitch,
+                startTime: converted[0].startTime,
+                endTime: converted[0].endTime,
+                isRest: converted[0].isRest
+            } : null,
+            duration: totalDuration
+        });
+
         initializePlayback({
             sessionId: session?.sessionId || 0,
             songId: parseInt(songId!),
             difficulty: difficulty!,
             duration: totalDuration,
-            totalNotes: converted.length
+            totalNotes: noteCount
         });
     };
 
@@ -166,22 +184,42 @@ const PlayAlongPage: React.FC = () => {
     };
 
     const performRealtimeValidation = (time: number = currentTime) => {
-        const noteIndex = findNoteIndexAtTime(time, expectedNotes);
-        const expectedNote = noteIndex >= 0 ? expectedNotes[noteIndex] : null;
+        const eventIndex = findNoteIndexAtTime(time, expectedNotes);
+        const expectedEvent = eventIndex >= 0 ? expectedNotes[eventIndex] : null;
 
-        if (noteIndex !== lastNoteIndexRef.current) {
-            if (noteIndex >= 0) {
-                setCurrentNoteIndex(noteIndex);
-                setExpectedNote(expectedNote);
+        if (eventIndex !== lastNoteIndexRef.current) {
+            if (eventIndex >= 0) {
+                setCurrentNoteIndex(eventIndex);
+                setExpectedNote(expectedEvent);
                 setNoteStartTime(time);
+
+                console.log('🎯 Current event changed:', {
+                    index: eventIndex,
+                    isRest: expectedEvent?.isRest,
+                    pitch: expectedEvent?.pitch,
+                    time: time.toFixed(2),
+                    startTime: expectedEvent?.startTime.toFixed(2),
+                    endTime: expectedEvent?.endTime.toFixed(2)
+                });
             } else {
                 setCurrentNoteIndex(-1);
                 setExpectedNote(null);
             }
-            lastNoteIndexRef.current = noteIndex;
+            lastNoteIndexRef.current = eventIndex;
         }
 
-        if (!expectedNote) return;
+        if (!expectedEvent) return;
+
+        // Check if current event is a rest
+        if (expectedEvent.isRest) {
+            // Auto-advance through rests based on time
+            if (time >= expectedEvent.endTime) {
+                console.log('⏭️ Auto-advancing past rest');
+                advanceToNextNote();
+            }
+            // Skip validation for rest periods
+            return;
+        }
 
         updateDetectedPitch({
             note: tuner.note,
@@ -193,7 +231,7 @@ const PlayAlongPage: React.FC = () => {
         });
 
         const validation = validateNote(
-            expectedNote,
+            expectedEvent,
             {
                 note: tuner.note,
                 octave: tuner.octave,
@@ -210,9 +248,9 @@ const PlayAlongPage: React.FC = () => {
         setCurrentNoteResult(validation);
 
         if (playMode === 'wait') {
-            handleWaitMode(validation, expectedNote, noteIndex);
+            handleWaitMode(validation, expectedEvent, eventIndex);
         } else {
-            handleFlowMode(validation, expectedNote, noteIndex, time);
+            handleFlowMode(validation, expectedEvent, eventIndex, time);
         }
     };
 

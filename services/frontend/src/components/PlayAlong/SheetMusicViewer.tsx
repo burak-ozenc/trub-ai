@@ -17,6 +17,7 @@ const NOTE_COLORS: typeof NOTE_COLORS = {
     close: '#f59e0b',
     wrong: '#ef4444',
     silent: '#9ca3af',
+    rest: '#6366f1',      // Indigo for rest periods
     default: '#000000',
     dimmed: '#00000080'
 };
@@ -84,11 +85,20 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
 
     // Highlight current note/rest
     useEffect(() => {
+        console.log('🎯 Highlight effect triggered:', {
+            currentNoteIndex,
+            elementCount: noteElementsRef.current.length,
+            eventsCount: midiData?.events?.length || 0,
+            notesCount: midiData?.notes.length || 0
+        });
+
         if (currentNoteIndex >= 0 && noteElementsRef.current.length > 0) {
-            console.log('🎯 Highlighting note:', currentNoteIndex);
+            console.log('🎯 Highlighting event:', currentNoteIndex);
             highlightCurrentNote();
+        } else if (currentNoteIndex >= 0) {
+            console.warn('⚠️ Cannot highlight - no elements collected!');
         }
-    }, [currentNoteIndex]);
+    }, [currentNoteIndex, midiData]);
 
     // Update visual feedback
     useEffect(() => {
@@ -145,9 +155,11 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
             setMidiData(vexFlowData);
 
             // Notify parent that MIDI is loaded
+            // Pass events (notes + rests) for complete timeline
             if (onMidiLoaded) {
-                console.log('📤 Calling onMidiLoaded with', vexFlowData.notes.length, 'notes');
-                onMidiLoaded(vexFlowData.notes);
+                const events = vexFlowData.events || vexFlowData.notes;
+                console.log('📤 Calling onMidiLoaded with', events.length, 'events (notes + rests)');
+                onMidiLoaded(events);
             }
 
         } catch (err) {
@@ -170,9 +182,11 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
 
         const containerWidth = scrollContainerRef.current.clientWidth || 800;
         const width = Math.floor(containerWidth - 40);
-        const notesCount = midiData.notes.length;
+        // Use events array (includes notes + rests) for rendering
+        const events = midiData.events || midiData.notes;
+        const eventsCount = events.length;
         const notesPerSystem = 8;
-        const systemsNeeded = Math.ceil(notesCount / notesPerSystem);
+        const systemsNeeded = Math.ceil(eventsCount / notesPerSystem);
         const height = Math.max(600, systemsNeeded * 150 + 100);
 
         try {
@@ -185,8 +199,8 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
             for (let i = 0; i < systemsNeeded; i++) {
                 const yPosition = 40 + (i * 150);
                 const startIdx = i * notesPerSystem;
-                const endIdx = Math.min(startIdx + notesPerSystem, notesCount);
-                const systemNotes = midiData.notes.slice(startIdx, endIdx);
+                const endIdx = Math.min(startIdx + notesPerSystem, eventsCount);
+                const systemNotes = events.slice(startIdx, endIdx);
 
                 if (systemNotes.length > 0) {
                     renderSystem(
@@ -285,40 +299,85 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
     };
 
     /**
-     * Collect SVG note elements for manipulation - RESTORED ORIGINAL LOGIC
+     * Collect SVG note AND REST elements for manipulation
      */
     const collectNoteElements = () => {
         if (!containerRef.current) return;
 
-        // Try multiple selectors for note heads
-        let noteHeads = containerRef.current.querySelectorAll('.vf-notehead path');
+        const elements: SVGElement[] = [];
+        const stems: SVGElement[] = [];
 
-        if (noteHeads.length === 0) {
-            noteHeads = containerRef.current.querySelectorAll('g.vf-stavenote > g > path');
-        }
+        // Get all stave notes (includes both notes and rests)
+        const staveNotes = containerRef.current.querySelectorAll('.vf-stavenote');
 
-        if (noteHeads.length === 0) {
-            const allPaths = containerRef.current.querySelectorAll('path');
-            noteHeads = Array.from(allPaths).filter(path => {
-                const parent = path.parentElement;
-                return parent && (
-                    parent.classList.contains('vf-notehead') ||
-                    parent.classList.contains('vf-note') ||
-                    parent.parentElement?.classList.contains('vf-stavenote')
-                );
-            }) as unknown as NodeListOf<Element>;
-        }
+        console.log('🔍 Collecting elements from', staveNotes.length, 'stave notes');
 
-        noteElementsRef.current = Array.from(noteHeads) as SVGElement[];
+        staveNotes.forEach((staveNote, idx) => {
+            // Check if this is a rest
+            const restElement = staveNote.querySelector('.vf-rest');
+            if (restElement) {
+                // It's a rest - VexFlow can render rests as text or path
+                let restGlyph = restElement.querySelector('text') as SVGElement;
+                if (!restGlyph) {
+                    restGlyph = restElement.querySelector('path') as SVGElement;
+                }
+                if (!restGlyph) {
+                    // Fallback: get first child that's text or path
+                    restGlyph = Array.from(restElement.children).find(
+                        child => child.tagName === 'text' || child.tagName === 'path'
+                    ) as SVGElement;
+                }
+                if (restGlyph) {
+                    elements.push(restGlyph);
+                    console.log(`  [${idx}] Rest element collected (${restGlyph.tagName})`);
+                } else {
+                    console.warn(`  [${idx}] Rest found but no glyph!`);
+                }
+            } else {
+                // It's a note - VexFlow renders noteheads as <text> elements!
+                let noteHead = staveNote.querySelector('.vf-notehead text') as SVGElement;
 
-        // Collect stems
-        const stems = containerRef.current.querySelectorAll('.vf-stem path, path[class*="stem"]');
-        noteStemsRef.current = Array.from(stems) as SVGElement[];
+                if (!noteHead) {
+                    // Fallback: Look for any text element in .vf-notehead
+                    const noteheadEl = staveNote.querySelector('.vf-notehead');
+                    if (noteheadEl) {
+                        const texts = noteheadEl.querySelectorAll('text');
+                        noteHead = texts[0] as SVGElement; // First text is the main notehead
+                    }
+                }
 
+                if (noteHead) {
+                    elements.push(noteHead);
+                    console.log(`  [${idx}] Note element collected (text)`);
+                } else {
+                    console.warn(`  [${idx}] Note found but no notehead text! HTML:`, staveNote.innerHTML.substring(0, 200));
+                }
+
+                // Collect stem if present
+                const stem = staveNote.querySelector('.vf-stem path') ||
+                             Array.from(staveNote.querySelectorAll('path')).find(p =>
+                                 p.parentElement?.classList.contains('vf-stem')
+                             );
+                if (stem) {
+                    stems.push(stem as SVGElement);
+                }
+            }
+        });
+
+        noteElementsRef.current = elements;
+        noteStemsRef.current = stems;
+
+        const expectedCount = midiData?.events?.length || midiData?.notes.length || 0;
         console.log('✅ Collected elements:', {
-            noteHeads: noteElementsRef.current.length,
+            collected: noteElementsRef.current.length,
+            expected: expectedCount,
+            match: noteElementsRef.current.length === expectedCount,
             stems: noteStemsRef.current.length
         });
+
+        if (noteElementsRef.current.length !== expectedCount) {
+            console.error('❌ MISMATCH: Collected', noteElementsRef.current.length, 'but expected', expectedCount);
+        }
 
         // Apply initial coloring
         colorNotesBasedOnResults();
@@ -352,40 +411,54 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
     };
 
     /**
-     * Highlight the current note being played - RESTORED with stem support
+     * Highlight the current note/rest being played - with rest support
      */
     const highlightCurrentNote = () => {
-        if (noteElementsRef.current.length === 0) return;
+        if (noteElementsRef.current.length === 0 || !midiData) {
+            console.warn('⚠️ highlightCurrentNote: No elements or midiData');
+            return;
+        }
+
+        const events = midiData.events || midiData.notes;
+
+        console.log('🎨 Highlighting:', {
+            currentNoteIndex,
+            totalElements: noteElementsRef.current.length,
+            totalEvents: events.length
+        });
 
         noteElementsRef.current.forEach((el, idx) => {
             if (!el) return;
 
             const result = noteResults.find(r => r.index === idx);
+            const isCurrentRest = idx === currentNoteIndex && events[idx]?.isRest;
 
             if (result) {
                 // Keep result color
                 return;
             } else if (idx === currentNoteIndex) {
-                // Current note - BRIGHT ORANGE
-                el.style.fill = NOTE_COLORS.current;
-                el.style.stroke = NOTE_COLORS.current;
+                // Current event - use INDIGO for rests, ORANGE for notes
+                const highlightColor = isCurrentRest ? NOTE_COLORS.rest : NOTE_COLORS.current;
+                console.log(`  ✓ Highlighting index ${idx} as ${isCurrentRest ? 'REST' : 'NOTE'} with color ${highlightColor}`);
+                el.style.fill = highlightColor;
+                el.style.stroke = highlightColor;
                 el.style.strokeWidth = '2';
                 el.style.opacity = '1';
 
-                // RESTORED: Stem coloring
+                // Stem coloring
                 if (noteStemsRef.current[idx]) {
-                    noteStemsRef.current[idx].style.fill = NOTE_COLORS.current;
-                    noteStemsRef.current[idx].style.stroke = NOTE_COLORS.current;
+                    noteStemsRef.current[idx].style.fill = highlightColor;
+                    noteStemsRef.current[idx].style.stroke = highlightColor;
                     noteStemsRef.current[idx].style.strokeWidth = '2';
                 }
             } else if (idx < currentNoteIndex) {
-                // Past notes - dim
+                // Past events - dim
                 el.style.opacity = '0.3';
                 if (noteStemsRef.current[idx]) {
                     noteStemsRef.current[idx].style.opacity = '0.3';
                 }
             } else {
-                // Future notes - default
+                // Future events - default
                 el.style.fill = NOTE_COLORS.default;
                 el.style.stroke = NOTE_COLORS.default;
                 el.style.strokeWidth = '1';
@@ -420,10 +493,18 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
     };
 
     /**
-     * Update visual feedback (highlight box + progress bar) - RESTORED
+     * Update visual feedback (highlight box + progress bar) - with rest support
      */
     const updateVisualFeedback = () => {
+        console.log('📊 updateVisualFeedback called:', {
+            currentNoteIndex,
+            isPlaying,
+            currentTime,
+            hasMidiData: !!midiData
+        });
+
         if (currentNoteIndex < 0) {
+            console.log('  → No current note, removing visuals');
             // Remove visuals when no note selected
             if (highlightBoxRef.current) {
                 highlightBoxRef.current.remove();
@@ -436,7 +517,32 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
             return;
         }
 
+        // Check if current event is a rest
+        const events = midiData?.events || midiData?.notes || [];
+        const currentEvent = events[currentNoteIndex];
+        const isRest = currentEvent?.isRest || false;
+
+        console.log('  → Current event:', {
+            index: currentNoteIndex,
+            isRest,
+            pitch: currentEvent?.name,
+            time: currentEvent?.time
+        });
+
+        // Skip progress bar during rest periods
+        if (isRest) {
+            console.log('  → Is rest, skipping progress bar');
+            if (progressBarRef.current) {
+                progressBarRef.current.remove();
+                progressBarRef.current = null;
+            }
+            // Still draw highlight box for rests
+            drawHighlightBox(currentNoteIndex);
+            return;
+        }
+
         // RESTORED: Draw highlight box around current note
+        console.log('  → Drawing highlight box and progress bar');
         drawHighlightBox(currentNoteIndex);
 
         // Calculate progress
@@ -654,7 +760,7 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
 
                 <div className="flex items-center gap-3 text-xs">
           <span className="text-gray-600">
-            {midiData?.notes.length} notes • {midiData?.tempo} BPM
+            {midiData?.notes.length} notes • {midiData?.events?.filter(e => e.isRest).length || 0} rests • {midiData?.tempo} BPM
           </span>
                     <label className="flex items-center gap-1 cursor-pointer">
                         <input
@@ -673,6 +779,10 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
                 <div className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: NOTE_COLORS.current }}></div>
                     <span>Current</span>
+                </div>
+                <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: NOTE_COLORS.rest }}></div>
+                    <span>Rest</span>
                 </div>
                 <div className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: NOTE_COLORS.correct }}></div>
@@ -701,13 +811,27 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
                 <div ref={containerRef} className="p-4 w-full" />
             </div>
 
-            {/* Status - RESTORED original with waiting message */}
+            {/* Status - with rest period indicator */}
             <div className="mt-2 text-xs text-center text-gray-500">
-                {isPlaying && currentNoteIndex >= 0 && (
-                    <span className="text-orange-600 font-medium">
-            ♪ Note {currentNoteIndex + 1} of {midiData?.notes.length}
-          </span>
-                )}
+                {isPlaying && currentNoteIndex >= 0 && (() => {
+                    const events = midiData?.events || midiData?.notes || [];
+                    const currentEvent = events[currentNoteIndex];
+                    const isRest = currentEvent?.isRest || false;
+
+                    if (isRest) {
+                        return (
+                            <span className="text-indigo-600 font-medium">
+                                𝄽 Rest period ({currentNoteIndex + 1} of {events.length})
+                            </span>
+                        );
+                    }
+
+                    return (
+                        <span className="text-orange-600 font-medium">
+                            ♪ Note {currentNoteIndex + 1} of {events.length}
+                        </span>
+                    );
+                })()}
                 {isPlaying && currentNoteIndex === -1 && midiData && midiData.notes.length > 0 && (
                     <span className="text-blue-600 font-medium animate-pulse">
             ⏳ Waiting for first note at {Math.floor(midiData.notes[0].time)}:{String(Math.floor((midiData.notes[0].time % 1) * 60)).padStart(2, '0')}...

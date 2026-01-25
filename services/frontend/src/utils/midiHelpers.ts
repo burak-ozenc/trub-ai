@@ -173,30 +173,29 @@ export const convertMidiToVexFlow = (midi: Midi): VexFlowMidiData => {
         // Sort notes by time
         const sortedNotes = [...track.notes].sort((a, b) => a.time - b.time);
 
-        // Normalize timing - start from 0 or small offset
+        // DO NOT normalize timing - use original MIDI times to match player
         const firstNoteTime = sortedNotes[0].time;
-        const timeOffset = firstNoteTime > 2 ? firstNoteTime - 0.5 : 0;
 
         console.log('⏰ Timing:', {
             firstNoteOriginal: firstNoteTime.toFixed(3),
-            offset: timeOffset.toFixed(3)
+            usingOriginalTiming: true
         });
 
         // Build events list with notes AND rests
         const events: VexFlowNote[] = [];
-        let currentTime = 0; // Start at 0
+        let currentTime = 0; // Track where we are in the timeline
 
         for (let i = 0; i < sortedNotes.length; i++) {
             const midiNote = sortedNotes[i];
-            const normalizedTime = midiNote.time - timeOffset;
-            const noteEndTime = normalizedTime + midiNote.duration;
+            const noteStartTime = midiNote.time; // Use original time
+            const noteEndTime = noteStartTime + midiNote.duration;
 
             // Check for gap before this note - ADD RESTS
-            const gap = normalizedTime - currentTime;
+            const gap = noteStartTime - currentTime;
             if (gap > 0.01) { // Significant gap
-                const rests = createRestsForGap(currentTime, normalizedTime, tempo);
+                const rests = createRestsForGap(currentTime, noteStartTime, tempo);
                 events.push(...rests);
-                console.log(`🎵 Gap at ${currentTime.toFixed(2)}-${normalizedTime.toFixed(2)}: added ${rests.length} rest(s)`);
+                console.log(`🎵 Gap at ${currentTime.toFixed(2)}-${noteStartTime.toFixed(2)}: added ${rests.length} rest(s)`);
             }
 
             // Add the note
@@ -206,7 +205,7 @@ export const convertMidiToVexFlow = (midi: Midi): VexFlowMidiData => {
             events.push({
                 keys: [vfKey],
                 duration: vfDuration,
-                time: normalizedTime,
+                time: noteStartTime,
                 endTime: noteEndTime,
                 velocity: midiNote.velocity,
                 name: midiNote.name,
@@ -242,7 +241,7 @@ export const convertMidiToVexFlow = (midi: Midi): VexFlowMidiData => {
 };
 
 /**
- * Find the note index at a given time (excludes rests)
+ * Find the event index at a given time (includes both notes and rests)
  */
 export const findNoteIndexAtTime = (currentTime: number, notes: ExpectedNote[]): number => {
     for (let i = 0; i < notes.length; i++) {
@@ -251,7 +250,7 @@ export const findNoteIndexAtTime = (currentTime: number, notes: ExpectedNote[]):
             return i;
         }
     }
-    return -1; // No note at this time (could be a rest or before/after song)
+    return -1; // No event at this time (before first event or after last event)
 };
 
 /**
@@ -272,7 +271,7 @@ export const findEventIndexAtTime = (currentTime: number, events: VexFlowNote[])
  */
 export const convertMidiNoteToExpected = (note: VexFlowNote, index: number): ExpectedNote => {
     return {
-        pitch: note.name,
+        pitch: note.isRest ? 'rest' : note.name,
         startTime: note.time,
         endTime: note.endTime,
         duration: note.originalDuration,
