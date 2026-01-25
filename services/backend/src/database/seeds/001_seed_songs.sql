@@ -41,4 +41,4 @@ INSERT INTO songs (
   1,
   NOW(),
   NOW()
-) ON CONFLICT (title) DO NOTHING;
+);
