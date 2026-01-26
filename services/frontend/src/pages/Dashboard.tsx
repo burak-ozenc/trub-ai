@@ -40,7 +40,18 @@ export default function Dashboard() {
               Welcome back, {user?.fullName || user?.username}! 🎺
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+              <button
+                onClick={() => navigate('/exercises')}
+                className="bg-orange-50 border border-orange-200 rounded-lg p-6 hover:bg-orange-100 transition-colors text-left"
+              >
+                <h3 className="text-lg font-semibold text-orange-900 mb-2">
+                  💪 Practice Exercises
+                </h3>
+                <p className="text-gray-600 mb-3">Work on specific techniques</p>
+                <span className="text-sm text-orange-600 font-medium">Browse Exercises →</span>
+              </button>
+
               <button
                 onClick={() => navigate('/practice-tools')}
                 className="bg-blue-50 border border-blue-200 rounded-lg p-6 hover:bg-blue-100 transition-colors text-left"

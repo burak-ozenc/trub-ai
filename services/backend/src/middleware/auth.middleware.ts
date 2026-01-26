@@ -45,3 +45,6 @@ export const authMiddleware = async (
     });
   }
 };
+
+// Export alias for backward compatibility
+export const authenticate = authMiddleware;

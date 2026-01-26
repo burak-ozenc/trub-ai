@@ -8,7 +8,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "typeorm": "typeorm-ts-node-commonjs",
-    "seed": "nodemon --exec ts-node --files src/database/seed.ts"
+    "seed": "nodemon --exec ts-node --files src/database/seed.ts",
+    "process-songs": "ts-node src/scripts/process-songs.ts",
+    "process-songs:dry-run": "ts-node src/scripts/process-songs.ts --dry-run",
+    "process-songs:validate": "ts-node src/scripts/process-songs.ts --validate-only"
   },
   "keywords": [
     "trubai",

@@ -1,0 +1,22 @@
+{
+  "pythonExecutable": "python",
+  "pythonScriptPath": "../../../audio-service/scripts/process_songs.py",
+  "sourceDataPath": "../../../audio-service/data/songs",
+  "targetDataPath": "../../data/songs",
+  "songs": [
+    {
+      "title": "Test Title",
+      "composer": "Test Composer",
+      "genre": "jazz",
+      "midiFile": "solo-trumpet-01in-f-90bpm.mid",
+      "isPublicDomain": true
+    },
+    {
+      "title": "trumpet-pack-01in-f-90bpm",
+      "composer": "Test Composer",
+      "genre": "jazz",
+      "midiFile": "trumpet-pack-01in-f-90bpm.mid",
+      "isPublicDomain": true
+    }
+  ]
+}

@@ -70,6 +70,47 @@ export class AudioServiceClient {
   }
 
   /**
+   * Analyze recording for practice exercise
+   */
+  async analyzeRecording(
+    audioFilePath: string,
+    analysisType: string = 'full'
+  ): Promise<any> {
+    try {
+      console.log(`Analyzing recording: ${audioFilePath} (type: ${analysisType})`);
+
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', fs.createReadStream(audioFilePath));
+      formData.append('analysis_type', analysisType);
+
+      // Make request to audio service
+      const response = await this.client.post(
+        '/api/analyze',
+        formData,
+        {
+          headers: formData.getHeaders()
+        }
+      );
+
+      console.log('Recording analysis completed successfully');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error analyzing recording:', error.message);
+
+      if (error.response) {
+        throw new Error(
+          `Audio service error: ${error.response.data?.message || error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('Audio service is not responding');
+      } else {
+        throw new Error(`Failed to analyze recording: ${error.message}`);
+      }
+    }
+  }
+
+  /**
    * Check if audio service is available
    */
   async checkHealth(): Promise<boolean> {

@@ -12,7 +12,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trubai_user}"]
+      test: ["CMD-SHELL", "pg_isready -U trubai_user -d trubai"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,15 +29,22 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${BACKEND_PORT:-3000}
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgresql://trubai_user:trubai_pass@postgres:5432/trubai
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: trubai_user
+      POSTGRES_PASSWORD: trubai_pass
+      POSTGRES_DB: trubai
+      JWT_SECRET: ${JWT_SECRET:-development-secret-change-in-production-abc123}
       AUDIO_SERVICE_URL: http://audio-service:8001
+      LLM_SERVICE_URL: http://llm-service:8002
     ports:
       - "3000:3000"
     volumes:
       - ./services/backend/src:/app/src
       - ./services/backend/package.json:/app/package.json
       - ./services/backend/data:/app/data
+      - ./services/audio-service:/audio-service
       - backend-node-modules:/app/node_modules
     depends_on:
       postgres:
@@ -63,6 +70,25 @@ services:
     networks:
       - trubai-network
     command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+  # Python LLM Service
+  llm-service:
+    build:
+      context: ./services/llm-service
+      dockerfile: Dockerfile
+    container_name: trubai-llm-service
+    env_file:
+      - ./services/llm-service/.env
+    environment:
+      SERVICE_PORT: 8002
+      SERVICE_HOST: 0.0.0.0
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./services/llm-service:/app
+    networks:
+      - trubai-network
+    command: uvicorn main:app --host 0.0.0.0 --port 8002 --reload
 
   # React Frontend
   frontend:

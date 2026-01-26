@@ -7,6 +7,8 @@ import { initializeDatabase } from './database/data-source';
 import authRoutes from './routes/auth.routes';
 import songRoutes from './routes/song.routes';
 import playAlongRoutes from './routes/play-along.routes';
+import exerciseRoutes from './routes/exercise.routes';
+import practiceRoutes from './routes/practice.routes';
 
 // Load environment variables
 dotenv.config();
@@ -50,6 +52,8 @@ app.get('/', (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/songs', songRoutes);
 app.use('/api/play-along', playAlongRoutes);
+app.use('/api/exercises', exerciseRoutes);
+app.use('/api/practice', practiceRoutes);
 
 // API routes placeholder
 app.get('/api', (_req: Request, res: Response) => {
@@ -64,10 +68,16 @@ app.get('/api', (_req: Request, res: Response) => {
       '/api/songs/:id/audio/:difficulty - GET - Stream backing track',
       '/api/songs/:id/midi/:difficulty - GET - Stream MIDI file',
       '/api/songs/:id/sheet-music/:difficulty - GET - Stream sheet music PDF',
+      '/api/exercises - GET - List all exercises',
+      '/api/exercises/recommended - GET - Get recommended exercises (protected)',
+      '/api/exercises/:id - GET - Get exercise details',
+      '/api/practice/start - POST - Start practice session (protected)',
+      '/api/practice/upload-recording - POST - Upload and analyze recording (protected)',
+      '/api/practice/complete - POST - Complete practice session (protected)',
+      '/api/practice/sessions - GET - List practice sessions (protected)',
+      '/api/practice/stats - GET - Get practice statistics (protected)',
       '/api/play-along - Coming soon',
-      '/api/users - Coming soon',
-      '/api/recordings - Coming soon',
-      '/api/practice - Coming soon'
+      '/api/users - Coming soon'
     ]
   });
 });
@@ -93,6 +103,8 @@ const startServer = async () => {
       console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth`);
       console.log(`🎵 Song endpoints: http://localhost:${PORT}/api/songs`);
       console.log(`🎸 Play-along endpoints: http://localhost:${PORT}/api/play-along`);
+      console.log(`💪 Exercise endpoints: http://localhost:${PORT}/api/exercises`);
+      console.log(`📝 Practice endpoints: http://localhost:${PORT}/api/practice`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

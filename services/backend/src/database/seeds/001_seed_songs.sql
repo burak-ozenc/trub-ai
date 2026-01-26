@@ -42,3 +42,49 @@ INSERT INTO songs (
   NOW(),
   NOW()
 );
+
+
+-- Seed songs table with Stellar Fingers song
+INSERT INTO songs (
+    title,
+    composer,
+    artist,
+    genre,
+    tempo,
+    key_signature,
+    time_signature,
+    duration_seconds,
+    beginner_midi_path,
+    intermediate_midi_path,
+    advanced_midi_path,
+    beginner_sheet_music_path,
+    intermediate_sheet_music_path,
+    advanced_sheet_music_path,
+    backing_track_path,
+    is_public_domain,
+    is_active,
+    order_index,
+    created_at,
+    updated_at
+) VALUES (
+             'trumpet-pack-01in-f-90bpm',
+             'Traditional',
+             NULL,
+             'folk',
+             90,
+             'C major',
+             '4/4',
+             120,
+             'trumpet-pack-01in-f-90bpm/beginner.mid',
+             'trumpet-pack-01in-f-90bpm/intermediate.mid',
+             'trumpet-pack-01in-f-90bpm/advanced.mid',
+             'trumpet-pack-01in-f-90bpm/beginner.xml',
+             'trumpet-pack-01in-f-90bpm/intermediate.xml',
+             'trumpet-pack-01in-f-90bpm/advanced.xml',
+             'trumpet-pack-01in-f-90bpm/backing-track.mp3',
+             true,
+             true,
+             1,
+             NOW(),
+             NOW()
+         );

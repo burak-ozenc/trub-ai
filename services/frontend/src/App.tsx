@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import PracticeTools from './pages/PracticeTools';
 import Songs from './pages/Songs';
 import PlayAlongPage from './pages/PlayAlongPage';
+import ExerciseLibrary from './pages/ExerciseLibrary';
+import PracticeMode from './pages/PracticeMode';
 
 function App() {
   return (
@@ -44,6 +46,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <PlayAlongPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/exercises"
+            element={
+              <ProtectedRoute>
+                <ExerciseLibrary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice/:exerciseId"
+            element={
+              <ProtectedRoute>
+                <PracticeMode />
               </ProtectedRoute>
             }
           />
