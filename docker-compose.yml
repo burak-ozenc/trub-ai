@@ -38,6 +38,12 @@ services:
       JWT_SECRET: ${JWT_SECRET:-development-secret-change-in-production-abc123}
       AUDIO_SERVICE_URL: http://audio-service:8001
       LLM_SERVICE_URL: http://llm-service:8002
+      # AWS S3 Configuration (LocalStack for local dev)
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-trubai-media-local}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
     ports:
       - "3000:3000"
     volumes:
@@ -49,9 +55,33 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      localstack:
+        condition: service_healthy
     networks:
       - trubai-network
     command: npm run dev
+
+  # LocalStack - Local AWS S3 emulator for development
+  localstack:
+    image: localstack/localstack:latest
+    container_name: trubai-localstack
+    environment:
+      SERVICES: s3
+      DEBUG: ${DEBUG:-0}
+      DATA_DIR: /var/lib/localstack
+      DOCKER_HOST: unix:///var/run/docker.sock
+    ports:
+      - "4566:4566"
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - trubai-network
 
   # Python Audio Service
   audio-service:
@@ -126,3 +156,4 @@ volumes:
   backend-node-modules:
   frontend-node-modules:
   audio-service-cache:
+  localstack-data:

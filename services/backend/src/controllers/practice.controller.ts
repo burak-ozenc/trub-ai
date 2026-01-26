@@ -3,6 +3,7 @@
  */
 import { Request, Response } from 'express';
 import { PracticeService } from '../services/practice.service';
+import { S3UploadedFile } from '../middleware/s3-upload.middleware';
 
 const practiceService = new PracticeService();
 
@@ -48,7 +49,7 @@ export async function uploadRecording(req: Request, res: Response): Promise<void
       return;
     }
 
-    const file = req.file;
+    const file = req.file as S3UploadedFile;
 
     if (!file) {
       res.status(400).json({ error: 'No audio file provided' });
@@ -80,8 +81,7 @@ export async function uploadRecording(req: Request, res: Response): Promise<void
     res.json({
       recording: {
         id: result.recording.id,
-        filename: result.recording.filename,
-        fileSize: result.recording.fileSize
+        filename: result.recording.filename
       },
       analysis: result.analysis,
       feedback: result.feedback

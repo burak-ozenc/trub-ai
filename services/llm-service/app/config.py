@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # Groq API Configuration
     groq_api_key: str = ""  # Will be validated at runtime
-    groq_model: str = "mixtral-8x7b-32768"
+    groq_model: str = "openai/gpt-oss-120b"
     groq_temperature: float = 0.7
     groq_max_tokens: int = 2048
 

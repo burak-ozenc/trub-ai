@@ -94,6 +94,7 @@ export class PlayAlongService {
     session.rhythmAccuracy = data.rhythmAccuracy ?? null;
     session.totalScore = data.totalScore ?? null;
     session.durationSeconds = data.durationSeconds ?? null;
+    session.recordingS3Key = (data as any).recordingS3Key ?? null; // S3 key for uploaded recording
     session.completed = true;
     session.completedAt = new Date();
 

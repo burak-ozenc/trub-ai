@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { SongService } from '../services/song.service';
 import { Difficulty, Genre } from '../entities/enums';
+import { S3Service } from '../services/s3.service';
+import { S3Config } from '../config/s3.config';
 import path from 'path';
 import fs from 'fs';
 
@@ -145,7 +147,7 @@ export class SongController {
 
   /**
    * GET /api/songs/:id/audio/:difficulty
-   * Stream backing track audio file
+   * Stream backing track audio file (via S3 presigned URL or local fallback)
    */
   getAudioFile = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -160,8 +162,12 @@ export class SongController {
         return;
       }
 
-      const song = await this.songService.getSongById(parseInt(id));
-      if (!song) {
+      // Get song entity with S3 metadata
+      const songEntity = await this.songService['songRepository'].findOne({
+        where: { id: parseInt(id) }
+      });
+
+      if (!songEntity) {
         res.status(404).json({
           error: 'Not Found',
           message: 'Song not found'
@@ -169,8 +175,21 @@ export class SongController {
         return;
       }
 
-      // Get backing track path
-      const backingTrackPath = song.backingTrackPath;
+      // Try S3 first if enabled and key exists
+      if (S3Config.isEnabled() && songEntity.backingTrackS3Key) {
+        try {
+          const s3Service = new S3Service();
+          const presignedUrl = await s3Service.getPresignedUrl(songEntity.backingTrackS3Key, 900);
+          console.log('🔗 Redirecting to S3 presigned URL for backing track');
+          res.redirect(presignedUrl);
+          return;
+        } catch (s3Error) {
+          console.warn('⚠️  S3 download failed, falling back to local file:', s3Error);
+        }
+      }
+
+      // Fallback to local file
+      const backingTrackPath = songEntity.backingTrackPath;
       if (!backingTrackPath) {
         res.status(404).json({
           error: 'Not Found',
@@ -182,7 +201,6 @@ export class SongController {
       // Construct full file path
       const dataDir = process.env.DATA_DIR || path.join(__dirname, '../../data');
       const filePath = path.join(dataDir, 'songs', backingTrackPath);
-      console.log('filePath:', filePath)
 
       // Check if file exists
       if (!fs.existsSync(filePath)) {
@@ -226,11 +244,10 @@ export class SongController {
 
   /**
    * GET /api/songs/:id/midi/:difficulty
-   * Stream MIDI file
+   * Stream MIDI file (via S3 presigned URL or local fallback)
    */
   getMidiFile = async (req: Request, res: Response): Promise<void> => {
     try {
-      console.log('it hits the endpoint')
       const { id, difficulty } = req.params;
       console.log(`🎵 MIDI request: songId=${id}, difficulty=${difficulty}`);
 
@@ -244,8 +261,12 @@ export class SongController {
         return;
       }
 
-      const song = await this.songService.getSongById(parseInt(id));
-      if (!song) {
+      // Get song entity with S3 metadata
+      const songEntity = await this.songService['songRepository'].findOne({
+        where: { id: parseInt(id) }
+      });
+
+      if (!songEntity) {
         console.error('❌ Song not found:', id);
         res.status(404).json({
           error: 'Not Found',
@@ -253,22 +274,27 @@ export class SongController {
         });
         return;
       }
-      console.log('✅ Song found:', song.title);
+      console.log('✅ Song found:', songEntity.title);
 
-      // Get MIDI path for difficulty
-      const songEntity = await this.songService['songRepository'].findOne({
-        where: { id: parseInt(id) }
-      });
+      // Get S3 key for difficulty
+      const s3Key = difficulty === Difficulty.BEGINNER ? songEntity.beginnerMidiS3Key :
+                    difficulty === Difficulty.INTERMEDIATE ? songEntity.intermediateMidiS3Key :
+                    songEntity.advancedMidiS3Key;
 
-      if (!songEntity) {
-        console.error('❌ Song entity not found:', id);
-        res.status(404).json({
-          error: 'Not Found',
-          message: 'Song not found'
-        });
-        return;
+      // Try S3 first if enabled and key exists
+      if (S3Config.isEnabled() && s3Key) {
+        try {
+          const s3Service = new S3Service();
+          const presignedUrl = await s3Service.getPresignedUrl(s3Key, 900);
+          console.log('🔗 Redirecting to S3 presigned URL for MIDI file');
+          res.redirect(presignedUrl);
+          return;
+        } catch (s3Error) {
+          console.warn('⚠️  S3 download failed, falling back to local file:', s3Error);
+        }
       }
 
+      // Fallback to local file
       const midiPath = this.songService.getMidiPath(songEntity, difficulty as Difficulty);
       console.log('📁 MIDI path from DB:', midiPath);
 
@@ -285,21 +311,13 @@ export class SongController {
       const dataDir = process.env.DATA_DIR || path.join(__dirname, '../../data');
       const filePath = path.join(dataDir, 'songs', midiPath);
       console.log('🗂️  Full MIDI file path:', filePath);
-      console.log('📂 __dirname:', __dirname);
-      console.log('📂 dataDir:', dataDir);
 
       // Check if file exists
       if (!fs.existsSync(filePath)) {
         console.error('❌ MIDI file not found on filesystem:', filePath);
         res.status(404).json({
           error: 'Not Found',
-          message: 'MIDI file not found on server',
-          debug: {
-            filePath,
-            dataDir,
-            midiPath,
-            __dirname
-          }
+          message: 'MIDI file not found on server'
         });
         return;
       }
@@ -342,7 +360,7 @@ export class SongController {
 
   /**
    * GET /api/songs/:id/sheet-music/:difficulty
-   * Stream sheet music PDF file
+   * Stream sheet music PDF file (via S3 presigned URL or local fallback)
    */
   getSheetMusicFile = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -357,16 +375,7 @@ export class SongController {
         return;
       }
 
-      const song = await this.songService.getSongById(parseInt(id));
-      if (!song) {
-        res.status(404).json({
-          error: 'Not Found',
-          message: 'Song not found'
-        });
-        return;
-      }
-
-      // Get sheet music path for difficulty
+      // Get song entity with S3 metadata
       const songEntity = await this.songService['songRepository'].findOne({
         where: { id: parseInt(id) }
       });
@@ -379,6 +388,25 @@ export class SongController {
         return;
       }
 
+      // Get S3 key for difficulty
+      const s3Key = difficulty === Difficulty.BEGINNER ? songEntity.beginnerSheetS3Key :
+                    difficulty === Difficulty.INTERMEDIATE ? songEntity.intermediateSheetS3Key :
+                    songEntity.advancedSheetS3Key;
+
+      // Try S3 first if enabled and key exists
+      if (S3Config.isEnabled() && s3Key) {
+        try {
+          const s3Service = new S3Service();
+          const presignedUrl = await s3Service.getPresignedUrl(s3Key, 900);
+          console.log('🔗 Redirecting to S3 presigned URL for sheet music');
+          res.redirect(presignedUrl);
+          return;
+        } catch (s3Error) {
+          console.warn('⚠️  S3 download failed, falling back to local file:', s3Error);
+        }
+      }
+
+      // Fallback to local file
       const sheetMusicPath = this.songService.getSheetMusicPath(songEntity, difficulty as Difficulty);
       if (!sheetMusicPath) {
         res.status(404).json({

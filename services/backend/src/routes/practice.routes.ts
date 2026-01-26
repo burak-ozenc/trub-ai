@@ -3,7 +3,7 @@
  */
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
-import { uploadPracticeRecording } from '../middleware/upload.middleware';
+import { uploadPracticeRecording } from '../middleware/s3-upload.middleware';
 import {
   startSession,
   uploadRecording,
@@ -18,7 +18,7 @@ const router = Router();
 
 // All practice routes require authentication
 router.post('/start', authenticate, startSession);
-router.post('/upload-recording', authenticate, uploadPracticeRecording.single('audio'), uploadRecording);
+router.post('/upload-recording', authenticate, uploadPracticeRecording, uploadRecording);
 router.post('/complete', authenticate, completeSession);
 router.get('/sessions', authenticate, listSessions);
 router.get('/sessions/:id', authenticate, getSessionById);

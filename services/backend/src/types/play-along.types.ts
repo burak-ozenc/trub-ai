@@ -86,6 +86,7 @@ export interface AudioAnalysisResult {
   pitchAccuracy: number;
   rhythmAccuracy: number;
   totalScore: number;
+  durationSeconds?: number;
   detailedMetrics: any;
   recommendations: string[];
   trumpetDetected: boolean;

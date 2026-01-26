@@ -43,6 +43,9 @@ export class PlayAlongSession {
   @Column({ type: 'varchar', nullable: true, name: 'recording_path' })
   recordingPath: string | null;
 
+  @Column({ type: 'varchar', nullable: true, name: 'recording_s3_key' })
+  recordingS3Key: string | null;
+
   @Column({ type: 'timestamp', name: 'started_at' })
   startedAt: Date;
 

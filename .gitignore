@@ -47,6 +47,9 @@ pgdata/
 # Docker
 *.pid
 
+# LocalStack data (local S3 emulator)
+localstack-data/
+
 # OS
 Thumbs.db
 Desktop.ini

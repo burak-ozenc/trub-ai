@@ -42,7 +42,7 @@ const practiceStorage = multer.diskStorage({
     if (!user || !user.id) {
       return cb(new Error('User not authenticated'), '');
     }
-
+    
     const dir = path.join(__dirname, '../../data/recordings', user.id);
 
     // Create directory if it doesn't exist

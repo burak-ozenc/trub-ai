@@ -40,6 +40,28 @@ export class Song {
   @Column({ type: 'varchar', nullable: true, name: 'backing_track_path' })
   backingTrackPath: string | null;
 
+  // S3 Keys for cloud storage (nullable for transition period)
+  @Column({ type: 'varchar', nullable: true, name: 'beginner_midi_s3_key' })
+  beginnerMidiS3Key: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'intermediate_midi_s3_key' })
+  intermediateMidiS3Key: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'advanced_midi_s3_key' })
+  advancedMidiS3Key: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'beginner_sheet_s3_key' })
+  beginnerSheetS3Key: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'intermediate_sheet_s3_key' })
+  intermediateSheetS3Key: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'advanced_sheet_s3_key' })
+  advancedSheetS3Key: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'backing_track_s3_key' })
+  backingTrackS3Key: string | null;
+
   @Column({ type: 'int', nullable: true })
   tempo: number | null;
 

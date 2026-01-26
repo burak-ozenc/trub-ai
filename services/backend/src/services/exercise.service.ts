@@ -1,12 +1,12 @@
 /**
  * Exercise service - Business logic for exercise management
  */
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { AppDataSource } from '../database/data-source';
 import { Exercise } from '../entities/Exercise.entity';
 import { User } from '../entities/User.entity';
 import { PracticeSession } from '../entities/PracticeSession.entity';
-import { Technique, Difficulty } from '../entities/enums';
+import { Technique, Difficulty, SkillLevel } from '../entities/enums';
 
 export interface ExerciseFilters {
   technique?: Technique;
@@ -102,11 +102,15 @@ export class ExerciseService {
     }
 
     // Match skill level (include current level and one level below for variety)
-    const skillLevels = [user.skillLevel];
-    if (user.skillLevel === Difficulty.INTERMEDIATE) {
+    // Map SkillLevel to Difficulty (both use same string values)
+    const skillLevels: Difficulty[] = [user.skillLevel as unknown as Difficulty];
+
+    // Add lower difficulty levels for variety
+    if (user.skillLevel === SkillLevel.INTERMEDIATE) {
       skillLevels.push(Difficulty.BEGINNER);
-    } else if (user.skillLevel === Difficulty.ADVANCED) {
+    } else if (user.skillLevel === SkillLevel.ADVANCED || user.skillLevel === SkillLevel.PROFESSIONAL) {
       skillLevels.push(Difficulty.INTERMEDIATE);
+      skillLevels.push(Difficulty.BEGINNER);
     }
 
     query.andWhere('exercise.difficulty IN (:...levels)', { levels: skillLevels });
@@ -122,7 +126,9 @@ export class ExerciseService {
       const additionalQuery = this.exerciseRepository.createQueryBuilder('exercise');
       additionalQuery
         .where('exercise.isActive = :isActive', { isActive: true })
-        .andWhere('exercise.difficulty = :difficulty', { difficulty: user.skillLevel })
+        .andWhere('exercise.difficulty = :difficulty', {
+          difficulty: user.skillLevel as unknown as Difficulty
+        })
         .andWhere('exercise.id NOT IN (:...excludeIds)', {
           excludeIds: recommended.length > 0 ? recommended.map(e => e.id) : [-1]
         })

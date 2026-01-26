@@ -2,14 +2,14 @@
  * Practice service - Business logic for practice session management
  */
 import { Repository } from 'typeorm';
-import path from 'path';
 import { AppDataSource } from '../database/data-source';
 import { PracticeSession } from '../entities/PracticeSession.entity';
 import { Recording } from '../entities/Recording.entity';
 import { Exercise } from '../entities/Exercise.entity';
-import { User } from '../entities/User.entity';
 import { AudioServiceClient } from '../clients/audio-service.client';
-import { llmServiceClient, LLMFeedbackResponse, SimplifiedFeedback } from '../clients/llm-service.client';
+import { llmServiceClient, LLMFeedbackResponse } from '../clients/llm-service.client';
+import { S3UploadedFile } from '../middleware/s3-upload.middleware';
+import { S3Service } from './s3.service';
 
 const audioServiceClient = new AudioServiceClient();
 
@@ -38,7 +38,7 @@ export class PracticeService {
   /**
    * Start a new practice session
    */
-  async startSession(userId: string, exerciseId: number): Promise<PracticeSession> {
+  async startSession(userId: number, exerciseId: number): Promise<PracticeSession> {
     // Verify exercise exists
     const exercise = await this.exerciseRepository.findOne({
       where: { id: exerciseId }
@@ -64,7 +64,7 @@ export class PracticeService {
    */
   async processRecording(
     sessionId: number,
-    audioFile: Express.Multer.File,
+    audioFile: S3UploadedFile,
     guidance?: string
   ): Promise<{
     recording: Recording;
@@ -89,22 +89,25 @@ export class PracticeService {
       throw new Error('User not found for session');
     }
 
-    // Create recording entity
+    // Create recording entity with S3 metadata
     const recording = this.recordingRepository.create({
       userId: session.userId,
-      filename: audioFile.filename,
-      audioFilePath: audioFile.path,
-      fileSize: audioFile.size,
-      mimeType: audioFile.mimetype
+      filename: audioFile.originalname,
+      audioFilePath: audioFile.s3Url, // Store S3 URL for backwards compatibility
+      s3Key: audioFile.s3Key,
+      s3Bucket: audioFile.s3Bucket,
+      guidance: guidance
     });
 
-    const savedRecording = await this.recordingRepository.save(recording);
+    let savedRecording: Recording | null = null;
 
     try {
-      // Analyze audio with audio service
+      savedRecording = await this.recordingRepository.save(recording);
+
+      // Analyze audio with audio service (pass S3 key, not path)
       console.log('Analyzing audio with audio service...');
       const analysis = await audioServiceClient.analyzeRecording(
-        audioFile.path,
+        audioFile.s3Key,
         'full'
       );
 
@@ -130,7 +133,7 @@ export class PracticeService {
       await this.recordingRepository.save(savedRecording);
 
       // Update session with simplified feedback
-      session.simplifiedFeedback = feedback.simplified;
+      session.simplifiedFeedback = JSON.stringify(feedback.simplified);
       await this.sessionRepository.save(session);
 
       return {
@@ -141,12 +144,21 @@ export class PracticeService {
     } catch (error: any) {
       console.error('Error processing recording:', error);
 
-      // Save error information to recording
-      savedRecording.analysisResults = {
-        error: error.message,
-        timestamp: new Date().toISOString()
-      };
-      await this.recordingRepository.save(savedRecording);
+      // Cleanup orphaned S3 object if DB save failed
+      if (!savedRecording && audioFile.s3Key) {
+        const s3Service = new S3Service();
+        await s3Service.deleteObject(audioFile.s3Key);
+        console.log('🗑️  Cleaned up orphaned S3 object after error');
+      }
+
+      // Save error information to recording if it exists
+      if (savedRecording) {
+        savedRecording.analysisResults = {
+          error: error.message,
+          timestamp: new Date().toISOString()
+        };
+        await this.recordingRepository.save(savedRecording);
+      }
 
       throw error;
     }
@@ -196,7 +208,7 @@ export class PracticeService {
    * Get user's practice sessions with filters
    */
   async getUserSessions(
-    userId: string,
+    userId: number,
     filters: {
       completed?: boolean;
       exerciseId?: number;
@@ -240,7 +252,7 @@ export class PracticeService {
   /**
    * Get session by ID
    */
-  async getSessionById(sessionId: number, userId: string): Promise<PracticeSession | null> {
+  async getSessionById(sessionId: number, userId: number): Promise<PracticeSession | null> {
     return this.sessionRepository.findOne({
       where: { id: sessionId, userId },
       relations: ['exercise', 'recording']
@@ -250,7 +262,7 @@ export class PracticeService {
   /**
    * Get user practice statistics
    */
-  async getUserStats(userId: string): Promise<PracticeStats> {
+  async getUserStats(userId: number): Promise<PracticeStats> {
     const sessions = await this.sessionRepository.find({
       where: { userId },
       relations: ['exercise'],
@@ -294,7 +306,7 @@ export class PracticeService {
   /**
    * Delete a practice session
    */
-  async deleteSession(sessionId: number, userId: string): Promise<boolean> {
+  async deleteSession(sessionId: number, userId: number): Promise<boolean> {
     const session = await this.sessionRepository.findOne({
       where: { id: sessionId, userId }
     });

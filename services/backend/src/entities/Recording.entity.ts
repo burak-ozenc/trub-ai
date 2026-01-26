@@ -20,6 +20,12 @@ export class Recording {
   @Column({ name: 'audio_file_path' })
   audioFilePath: string;
 
+  @Column({ name: 's3_key', type: 'varchar', nullable: true })
+  s3Key: string | null;
+
+  @Column({ name: 's3_bucket', type: 'varchar', nullable: true })
+  s3Bucket: string | null;
+
   @Column({ type: 'varchar', nullable: true })
   guidance: string | null;
 

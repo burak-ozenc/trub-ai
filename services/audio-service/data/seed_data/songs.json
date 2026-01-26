@@ -4,7 +4,14 @@
       "title": "Test Title",
       "composer": "Test Composer",
       "genre": "jazz",
-      "midi_file": "looperman-in-my-feelings-part-3.midi",
+      "midi_file": "solo-trumpet-01in-f-90bpm.mid",
+      "is_public_domain": true
+    },
+    {
+      "title": "trumpet-pack-01in-f-90bpm",
+      "composer": "public",
+      "genre": "jazz",
+      "midi_file": "trumpet-pack-01in-f-90bpm.mid",
       "is_public_domain": true
     }
   ]

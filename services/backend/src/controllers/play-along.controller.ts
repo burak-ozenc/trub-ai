@@ -3,8 +3,8 @@ import { PlayAlongService } from '../services/play-along.service';
 import { SongService } from '../services/song.service';
 import { AudioServiceClient } from '../clients/audio-service.client';
 import { Difficulty } from '../entities/enums';
-import path from 'path';
-import fs from 'fs';
+import { S3UploadedFile } from '../middleware/s3-upload.middleware';
+import { S3Service } from '../services/s3.service';
 
 export class PlayAlongController {
   private playAlongService: PlayAlongService;
@@ -72,7 +72,7 @@ export class PlayAlongController {
     try {
       const userId = (req as any).user.id;
       const { sessionId } = req.body;
-      const file = req.file;
+      const file = req.file as S3UploadedFile;
 
       // Validate input
       if (!sessionId) {
@@ -108,27 +108,9 @@ export class PlayAlongController {
       // Get song details for analysis
       const song = await this.songService.getSongById(session.songId);
 
-      // Save recording to permanent location
-      const recordingsDir = path.join(
-        process.env.DATA_DIR || path.join(__dirname, '../../data'),
-        'recordings',
-        userId.toString()
-      );
-
-      // Ensure directory exists
-      if (!fs.existsSync(recordingsDir)) {
-        fs.mkdirSync(recordingsDir, { recursive: true });
-      }
-
-      const recordingFileName = `${sessionId}.wav`;
-      const recordingPath = path.join(recordingsDir, recordingFileName);
-
-      // Move uploaded file to permanent location
-      fs.renameSync(file.path, recordingPath);
-
-      // Send to audio service for analysis
+      // Send to audio service for analysis (pass S3 key)
       const analysisResult = await this.audioServiceClient.analyzePerformance(
-        recordingPath,
+        file.s3Key,
         {
           tempo: song?.tempo ?? undefined,
           keySignature: song?.keySignature ?? undefined,
@@ -136,13 +118,14 @@ export class PlayAlongController {
         }
       );
 
-      // Update session with results
+      // Update session with results and S3 metadata
       const submitData = {
         sessionId: parseInt(sessionId),
         pitchAccuracy: analysisResult.pitchAccuracy,
         rhythmAccuracy: analysisResult.rhythmAccuracy,
         totalScore: analysisResult.totalScore,
-        durationSeconds: Math.floor(fs.statSync(recordingPath).size / 44100 / 2) // Rough estimate
+        durationSeconds: analysisResult.durationSeconds || 0,
+        recordingS3Key: file.s3Key
       };
 
       const performanceResult = await this.playAlongService.submitPerformance(
@@ -158,6 +141,16 @@ export class PlayAlongController {
       });
     } catch (error: any) {
       console.error('Error uploading recording:', error);
+
+      // Cleanup orphaned S3 object on error
+      if (req.file) {
+        const s3File = req.file as S3UploadedFile;
+        if (s3File.s3Key) {
+          const s3Service = new S3Service();
+          await s3Service.deleteObject(s3File.s3Key);
+          console.log('🗑️  Cleaned up orphaned S3 object after error');
+        }
+      }
 
       if (error.message.includes('Audio service')) {
         res.status(503).json({
