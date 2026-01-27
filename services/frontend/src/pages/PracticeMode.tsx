@@ -7,6 +7,8 @@ import { exerciseApi, practiceApi } from '../services/api';
 import { Exercise, PracticeSession, AnalysisResult } from '../types/exercise.types';
 import PracticeControls from '../components/Practice/PracticeControls';
 import SimpleFeedback from '../components/Practice/SimpleFeedback';
+import TunerWidget from '../components/tools/TunerWidget';
+import MetronomeWidget from '../components/tools/MetronomeWidget';
 import { ArrowLeft, FileText } from 'lucide-react';
 
 export default function PracticeMode() {
@@ -133,9 +135,9 @@ export default function PracticeMode() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500"></div>
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-primary-500"></div>
           <p className="mt-4 text-gray-600">Loading exercise...</p>
         </div>
       </div>
@@ -144,12 +146,12 @@ export default function PracticeMode() {
 
   if (!exercise) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Exercise not found.</p>
           <button
             onClick={() => navigate('/exercises')}
-            className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="mt-4 px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
           >
             Back to Exercises
           </button>
@@ -159,7 +161,7 @@ export default function PracticeMode() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
@@ -177,7 +179,7 @@ export default function PracticeMode() {
                 {exercise.title}
               </h1>
               <div className="flex items-center gap-3">
-                <span className="px-3 py-1 text-sm font-semibold rounded-full bg-orange-100 text-orange-800 border border-orange-300">
+                <span className="px-3 py-1 text-sm font-semibold rounded-full bg-primary-100 text-primary-800 border border-primary-300">
                   {exercise.difficulty.toUpperCase()}
                 </span>
                 <span className="text-gray-600 capitalize">
@@ -213,7 +215,7 @@ export default function PracticeMode() {
                   href={exercise.sheetMusicUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-semibold"
+                  className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold"
                 >
                   <FileText className="w-5 h-5" />
                   View Sheet Music
@@ -231,11 +233,22 @@ export default function PracticeMode() {
                 value={guidance}
                 onChange={(e) => setGuidance(e.target.value)}
                 placeholder="e.g., Focus on steady breath support, improve tone consistency..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                 rows={3}
                 disabled={isRecording || isAnalyzing}
               />
             </div>
+
+              {/* Practice Tools - Tuner & Metronome */}
+              <div className="space-y-6">
+                  <h2 className="text-xl font-bold text-gray-900">Practice Tools</h2>
+                  <div className="grid grid-cols-1 gap-6">
+                      {/* Metronome */}
+                      <div>
+                          <MetronomeWidget />
+                      </div>
+                  </div>
+              </div>
           </div>
 
           {/* Right Column - Recording & Feedback */}
@@ -281,6 +294,17 @@ export default function PracticeMode() {
                 )}
               </div>
             )}
+
+              {/* Practice Tools - Tuner & Metronome */}
+              <div className="space-y-6">
+                  <h2 className="text-xl font-bold text-gray-900">Practice Tools</h2>
+                  <div className="grid grid-cols-1 gap-6">
+                      {/* Tuner */}
+                      <div>
+                          <TunerWidget skillLevel="intermediate" />
+                      </div>
+                  </div>
+              </div>  
           </div>
         </div>
       </div>

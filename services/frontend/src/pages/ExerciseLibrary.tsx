@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import ExerciseCard from '../components/Practice/ExerciseCard';
 import { Exercise, Technique, Difficulty } from '../types/exercise.types';
 import { exerciseApi } from '../services/api';
-import { Star, Filter } from 'lucide-react';
+import { Star, Filter, ArrowLeft } from 'lucide-react';
 
 export default function ExerciseLibrary() {
   const navigate = useNavigate();
@@ -63,6 +63,13 @@ export default function ExerciseLibrary() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 text-gray-700 hover:text-primary-600 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-medium">Back to Dashboard</span>
+          </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Exercise Library
           </h1>
@@ -87,7 +94,7 @@ export default function ExerciseLibrary() {
               <select
                 value={filters.technique}
                 onChange={(e) => setFilters({ ...filters, technique: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="all">All Techniques</option>
                 {Object.values(Technique).map((tech) => (
@@ -106,7 +113,7 @@ export default function ExerciseLibrary() {
               <select
                 value={filters.difficulty}
                 onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="all">All Levels</option>
                 {Object.values(Difficulty).map((diff) => (
@@ -123,7 +130,7 @@ export default function ExerciseLibrary() {
         {recommended.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <Star className="w-6 h-6 text-orange-500 fill-orange-500" />
+              <Star className="w-6 h-6 text-primary-500 fill-primary-500" />
               <h2 className="text-2xl font-bold text-gray-900">
                 Recommended for You
               </h2>
@@ -149,7 +156,7 @@ export default function ExerciseLibrary() {
 
           {loading ? (
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
               <p className="mt-4 text-gray-600">Loading exercises...</p>
             </div>
           ) : exercises.length === 0 ? (

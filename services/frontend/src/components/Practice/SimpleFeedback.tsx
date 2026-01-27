@@ -43,23 +43,23 @@ export default function SimpleFeedback({ feedback }: Props) {
       )}
 
       {/* Quick Tip */}
-      <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4">
+      <div className="bg-warning-50 border-2 border-warning-300 rounded-xl p-4">
         <div className="flex items-start gap-3">
-          <Lightbulb className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+          <Lightbulb className="w-5 h-5 text-warning-600 mt-1 flex-shrink-0" />
           <div>
-            <h3 className="font-semibold text-blue-900 mb-1">Quick Tip</h3>
-            <p className="text-blue-800">{feedback.quick_tip}</p>
+            <h3 className="font-semibold text-warning-900 mb-1">Quick Tip</h3>
+            <p className="text-warning-800">{feedback.quick_tip}</p>
           </div>
         </div>
       </div>
 
       {/* Next Step */}
-      <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4">
+      <div className="bg-success-50 border-2 border-success-300 rounded-xl p-4">
         <div className="flex items-start gap-3">
-          <ArrowRight className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
+          <ArrowRight className="w-5 h-5 text-success-600 mt-1 flex-shrink-0" />
           <div>
-            <h3 className="font-semibold text-green-900 mb-1">Next Step</h3>
-            <p className="text-green-800">{feedback.next_step}</p>
+            <h3 className="font-semibold text-success-900 mb-1">Next Step</h3>
+            <p className="text-success-800">{feedback.next_step}</p>
           </div>
         </div>
       </div>

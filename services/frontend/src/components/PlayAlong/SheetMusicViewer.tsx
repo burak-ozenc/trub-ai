@@ -739,7 +739,7 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
                 <p className="text-red-500 mb-4">{error}</p>
                 <button
                     onClick={loadAndRenderMidi}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                    className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
                 >
                     Retry
                 </button>
@@ -820,20 +820,20 @@ const SheetMusicViewer: React.FC<SheetMusicViewerProps> = ({
 
                     if (isRest) {
                         return (
-                            <span className="text-indigo-600 font-medium">
+                            <span className="text-secondary-600 font-medium">
                                 𝄽 Rest period ({currentNoteIndex + 1} of {events.length})
                             </span>
                         );
                     }
 
                     return (
-                        <span className="text-orange-600 font-medium">
+                        <span className="text-primary-600 font-medium">
                             ♪ Note {currentNoteIndex + 1} of {events.length}
                         </span>
                     );
                 })()}
                 {isPlaying && currentNoteIndex === -1 && midiData && midiData.notes.length > 0 && (
-                    <span className="text-blue-600 font-medium animate-pulse">
+                    <span className="text-secondary-600 font-medium animate-pulse">
             ⏳ Waiting for first note at {Math.floor(midiData.notes[0].time)}:{String(Math.floor((midiData.notes[0].time % 1) * 60)).padStart(2, '0')}...
           </span>
                 )}

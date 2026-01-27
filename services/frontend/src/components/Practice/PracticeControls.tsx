@@ -58,12 +58,12 @@ export default function PracticeControls({
 
       {/* Analyzing Indicator */}
       {isAnalyzing && (
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4">
+        <div className="bg-secondary-50 border-2 border-secondary-300 rounded-xl p-4">
           <div className="flex items-center gap-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-secondary-600"></div>
             <div>
-              <p className="font-semibold text-blue-900">Analyzing your performance...</p>
-              <p className="text-sm text-blue-700">This may take a few moments</p>
+              <p className="font-semibold text-secondary-900">Analyzing your performance...</p>
+              <p className="text-sm text-secondary-700">This may take a few moments</p>
             </div>
           </div>
         </div>

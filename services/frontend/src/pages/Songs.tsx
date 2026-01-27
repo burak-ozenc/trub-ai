@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSongs, type Song } from '../services/playAlongService';
 import type { Difficulty } from '../types/sheet-music.types';
+import { ArrowLeft } from 'lucide-react';
 
 const Songs = () => {
   const navigate = useNavigate();
@@ -48,9 +49,9 @@ const Songs = () => {
 
   const getDifficultyColor = (difficulty: string): string => {
     switch (difficulty) {
-      case 'beginner': return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'intermediate': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-      case 'advanced': return 'bg-red-100 text-red-800 hover:bg-red-200';
+      case 'beginner': return 'bg-success-100 text-success-800 hover:bg-success-200';
+      case 'intermediate': return 'bg-warning-100 text-warning-800 hover:bg-warning-200';
+      case 'advanced': return 'bg-error-100 text-error-800 hover:bg-error-200';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -64,9 +65,9 @@ const Songs = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Loading songs...</p>
         </div>
       </div>
@@ -75,14 +76,14 @@ const Songs = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md">
-          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <div className="text-error-600 text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Songs</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="w-full bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors font-medium"
+            className="w-full bg-primary-600 text-white px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors font-medium"
           >
             Try Again
           </button>
@@ -92,10 +93,17 @@ const Songs = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-8">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 text-gray-700 hover:text-primary-600 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-medium">Back to Dashboard</span>
+          </button>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Song Catalog</h1>
           <p className="text-gray-600 text-lg">Choose a song and difficulty level to start practicing</p>
         </div>
@@ -112,7 +120,7 @@ const Songs = () => {
                 id="genre-filter"
                 value={filterGenre}
                 onChange={(e) => setFilterGenre(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 {genres.map(genre => (
                   <option key={genre} value={genre}>
@@ -131,7 +139,7 @@ const Songs = () => {
                 id="difficulty-filter"
                 value={filterDifficulty}
                 onChange={(e) => setFilterDifficulty(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="all">All Difficulties</option>
                 <option value="beginner">Beginner</option>
@@ -161,9 +169,9 @@ const Songs = () => {
                 className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden"
               >
                 {/* Song Header */}
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
+                <div className="bg-gradient-to-r from-primary-500 to-secondary-600 p-6 text-white">
                   <h3 className="text-xl font-bold mb-1">{song.title}</h3>
-                  <p className="text-indigo-100 text-sm">
+                  <p className="text-primary-100 text-sm">
                     {song.composer || song.artist || 'Traditional'}
                   </p>
                 </div>
@@ -173,7 +181,7 @@ const Songs = () => {
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center text-sm text-gray-600">
                       <span className="font-medium w-24">Genre:</span>
-                      <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                      <span className="px-3 py-1 bg-secondary-100 text-secondary-700 rounded-full text-xs font-medium">
                         {song.genre}
                       </span>
                     </div>

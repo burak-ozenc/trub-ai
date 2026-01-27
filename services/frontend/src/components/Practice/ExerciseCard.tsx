@@ -33,9 +33,9 @@ const techniqueColors: Record<Technique, string> = {
 
 // Difficulty color mapping
 const difficultyColors: Record<Difficulty, string> = {
-  [Difficulty.BEGINNER]: 'bg-green-100 text-green-800 border-green-300',
-  [Difficulty.INTERMEDIATE]: 'bg-orange-100 text-orange-800 border-orange-300',
-  [Difficulty.ADVANCED]: 'bg-red-100 text-red-800 border-red-300'
+  [Difficulty.BEGINNER]: 'bg-success-100 text-success-800 border-success-300',
+  [Difficulty.INTERMEDIATE]: 'bg-warning-100 text-warning-800 border-warning-300',
+  [Difficulty.ADVANCED]: 'bg-error-100 text-error-800 border-error-300'
 };
 
 export default function ExerciseCard({ exercise, selected, onClick }: Props) {
@@ -49,7 +49,7 @@ export default function ExerciseCard({ exercise, selected, onClick }: Props) {
       className={`
         rounded-xl border-2 p-6 cursor-pointer transition-all duration-300
         hover:shadow-xl hover:scale-105
-        ${selected ? 'border-orange-500 shadow-lg' : 'border-gray-200 hover:border-orange-300'}
+        ${selected ? 'border-primary-500 shadow-lg' : 'border-gray-200 hover:border-primary-300'}
         bg-white
       `}
     >

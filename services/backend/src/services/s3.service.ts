@@ -120,33 +120,36 @@ export class S3Service {
   }
 
   /**
-   * Upload stream to S3 using multipart upload (for large files)
-   * @param stream - Readable stream
+   * Upload buffer to S3 using multipart upload (for large files)
+   * @param buffer - Buffer or Readable stream
    * @param s3Key - S3 object key
    * @param contentType - MIME type
    * @param metadata - Optional metadata
    */
   async uploadStream(
-    stream: Readable,
+    buffer: Buffer | Readable,
     s3Key: string,
     contentType: string,
     metadata?: Record<string, string>
   ): Promise<void> {
-    const upload = new Upload({
-      client: this.client,
-      params: {
-        Bucket: this.bucket,
-        Key: s3Key,
-        Body: stream,
-        ContentType: contentType,
-        Metadata: metadata,
-      },
-      queueSize: 4, // Concurrent part uploads
-      partSize: 5 * 1024 * 1024, // 5MB parts
-    });
-
-    // Execute upload with retry
+    // Execute upload with retry - create new Upload instance for each attempt
     await retryWithBackoff(async () => {
+      // Convert buffer to stream for each retry attempt (streams can only be read once)
+      const body = Buffer.isBuffer(buffer) ? Readable.from(buffer) : buffer;
+
+      const upload = new Upload({
+        client: this.client,
+        params: {
+          Bucket: this.bucket,
+          Key: s3Key,
+          Body: body,
+          ContentType: contentType,
+          Metadata: metadata,
+        },
+        queueSize: 4, // Concurrent part uploads
+        partSize: 5 * 1024 * 1024, // 5MB parts
+      });
+
       await upload.done();
     });
   }

@@ -370,7 +370,7 @@ const PlayAlongPage: React.FC = () => {
                 <div className="flex items-center justify-between mb-6">
                     <button
                         onClick={() => navigate('/songs')}
-                        className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors"
+                        className="flex items-center gap-2 text-gray-600 hover:text-primary-600 transition-colors"
                     >
                         <ChevronLeft className="w-5 h-5"/>
                         Back to Songs
@@ -389,7 +389,7 @@ const PlayAlongPage: React.FC = () => {
                             className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                                 playMode === 'wait'
                                     ? 'bg-purple-500 text-white'
-                                    : 'bg-blue-500 text-white'
+                                    : 'bg-secondary-500 text-white'
                             }`}
                         >
                             {playMode === 'wait' ? 'Wait Mode' : 'Flow Mode'}
@@ -481,7 +481,7 @@ const PlayAlongPage: React.FC = () => {
                                         <div className="text-xs text-gray-600">Close</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-2xl font-bold text-red-600">{sessionStats.wrongNotes}</div>
+                                        <div className="text-2xl font-bold text-error-600">{sessionStats.wrongNotes}</div>
                                         <div className="text-xs text-gray-600">Wrong</div>
                                     </div>
                                     <div className="text-center">

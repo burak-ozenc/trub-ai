@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import multer from 'multer';
-import { Readable } from 'stream';
 import { S3Service } from '../services/s3.service';
 import { S3Config } from '../config/s3.config';
 
@@ -101,12 +100,9 @@ export function createS3UploadMiddleware(
 
         console.log(`⬆️  Uploading to S3: ${s3Key} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
 
-        // Convert buffer to readable stream
-        const stream = Readable.from(req.file.buffer);
-
-        // Upload to S3 with retry logic
+        // Upload to S3 with retry logic (buffer will be converted to stream for each retry)
         await s3Service.uploadStream(
-          stream,
+          req.file.buffer,
           s3Key,
           req.file.mimetype,
           {

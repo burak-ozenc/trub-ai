@@ -43,24 +43,24 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
               <button
                 onClick={() => navigate('/exercises')}
-                className="bg-orange-50 border border-orange-200 rounded-lg p-6 hover:bg-orange-100 transition-colors text-left"
+                className="bg-primary-50 border border-primary-200 rounded-lg p-6 hover:bg-primary-100 transition-colors text-left"
               >
-                <h3 className="text-lg font-semibold text-orange-900 mb-2">
+                <h3 className="text-lg font-semibold text-primary-900 mb-2">
                   💪 Practice Exercises
                 </h3>
                 <p className="text-gray-600 mb-3">Work on specific techniques</p>
-                <span className="text-sm text-orange-600 font-medium">Browse Exercises →</span>
+                <span className="text-sm text-primary-600 font-medium">Browse Exercises →</span>
               </button>
 
               <button
                 onClick={() => navigate('/practice-tools')}
-                className="bg-blue-50 border border-blue-200 rounded-lg p-6 hover:bg-blue-100 transition-colors text-left"
+                className="bg-secondary-50 border border-secondary-200 rounded-lg p-6 hover:bg-secondary-100 transition-colors text-left"
               >
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                <h3 className="text-lg font-semibold text-secondary-900 mb-2">
                   🎵 Practice Tools
                 </h3>
                 <p className="text-gray-600 mb-3">Tuner & Metronome</p>
-                <span className="text-sm text-blue-600 font-medium">Open Tools →</span>
+                <span className="text-sm text-secondary-600 font-medium">Open Tools →</span>
               </button>
 
               <button
@@ -74,8 +74,8 @@ export default function Dashboard() {
                 <span className="text-sm text-green-600 font-medium">Browse Songs →</span>
               </button>
 
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-purple-900 mb-2">
+              <div className="bg-warning-50 border border-warning-200 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-warning-900 mb-2">
                   🎤 Audio Analysis
                 </h3>
                 <p className="text-gray-600">Get AI-powered feedback</p>

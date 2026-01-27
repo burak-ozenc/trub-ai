@@ -48,7 +48,7 @@ export class S3Config {
   static getBucketName(): string {
     if (!this.bucketName) {
       this.bucketName = process.env.AWS_S3_BUCKET ?? null;
-
+        
       if (!this.bucketName) {
         throw new Error('AWS_S3_BUCKET environment variable is not set');
       }
