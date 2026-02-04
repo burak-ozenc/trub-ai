@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Music } from 'lucide-react';
+import RecordingsModal from '../components/RecordingsModal';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [recordingsModalOpen, setRecordingsModalOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -19,6 +23,13 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-gray-900">TRUB.AI</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setRecordingsModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                <Music className="w-5 h-5" />
+                My Recordings
+              </button>
               <span className="text-gray-700">
                 {user?.fullName || user?.username}
               </span>
@@ -96,6 +107,9 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Recordings Modal */}
+      <RecordingsModal isOpen={recordingsModalOpen} onClose={() => setRecordingsModalOpen(false)} />
     </div>
   );
 }

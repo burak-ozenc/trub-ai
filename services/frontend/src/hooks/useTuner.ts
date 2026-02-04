@@ -523,7 +523,8 @@ const useTuner = (skillLevel: SkillLevel = 'intermediate'): UseTunerReturn => {
     isDetecting,
     start,
     stop,
-    toggle
+    toggle,
+    streamRef // Expose stream for recording
   };
 };
 

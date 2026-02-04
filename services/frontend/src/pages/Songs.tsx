@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSongs, type Song } from '../services/playAlongService';
 import type { Difficulty } from '../types/sheet-music.types';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Music } from 'lucide-react';
+import RecordingsModal from '../components/RecordingsModal';
 
 const Songs = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const Songs = () => {
   const [error, setError] = useState<string | null>(null);
   const [filterGenre, setFilterGenre] = useState<string>('all');
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
+  const [recordingsModalOpen, setRecordingsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchSongs = async () => {
@@ -97,13 +99,22 @@ const Songs = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-gray-700 hover:text-primary-600 transition-colors mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back to Dashboard</span>
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 text-gray-700 hover:text-primary-600 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="font-medium">Back to Dashboard</span>
+            </button>
+            <button
+              onClick={() => setRecordingsModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              <Music className="w-5 h-5" />
+              My Recordings
+            </button>
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Song Catalog</h1>
           <p className="text-gray-600 text-lg">Choose a song and difficulty level to start practicing</p>
         </div>
@@ -251,6 +262,9 @@ const Songs = () => {
           </div>
         )}
       </div>
+
+      {/* Recordings Modal */}
+      <RecordingsModal isOpen={recordingsModalOpen} onClose={() => setRecordingsModalOpen(false)} />
     </div>
   );
 };

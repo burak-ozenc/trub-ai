@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// @ts-ignore
+const API_URL = import.meta.env.VITE_API_URL + '/api/' || 'http://localhost:3000/api';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -37,23 +38,23 @@ export const exerciseApi = {
     const params = new URLSearchParams();
     if (filters?.technique) params.append('technique', filters.technique);
     if (filters?.difficulty) params.append('difficulty', filters.difficulty);
-    return api.get(`/api/exercises?${params.toString()}`);
+    return api.get(`/exercises?${params.toString()}`);
   },
 
   getRecommendedExercises: (limit?: number) => {
     const params = limit ? `?limit=${limit}` : '';
-    return api.get(`/api/exercises/recommended${params}`);
+    return api.get(`/exercises/recommended${params}`);
   },
 
   getExercise: (id: number) => {
-    return api.get(`/api/exercises/${id}`);
+    return api.get(`/exercises/${id}`);
   }
 };
 
 // Practice API methods
 export const practiceApi = {
   startSession: (exerciseId: number) => {
-    return api.post('/api/practice/start', { exerciseId });
+    return api.post('/practice/start', { exerciseId });
   },
 
   uploadRecording: (sessionId: number, audioBlob: Blob, guidance?: string) => {
@@ -64,7 +65,7 @@ export const practiceApi = {
       formData.append('guidance', guidance);
     }
 
-    return api.post('/api/practice/upload-recording', formData, {
+    return api.post('/practice/upload-recording', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -72,7 +73,7 @@ export const practiceApi = {
   },
 
   completeSession: (sessionId: number, recordingId?: number) => {
-    return api.post('/api/practice/complete', { sessionId, recordingId });
+    return api.post('/practice/complete', { sessionId, recordingId });
   },
 
   getSessions: (filters?: {
@@ -86,19 +87,19 @@ export const practiceApi = {
     if (filters?.exerciseId) params.append('exerciseId', filters.exerciseId.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
     if (filters?.offset) params.append('offset', filters.offset.toString());
-    return api.get(`/api/practice/sessions?${params.toString()}`);
+    return api.get(`/practice/sessions?${params.toString()}`);
   },
 
   getSession: (id: number) => {
-    return api.get(`/api/practice/sessions/${id}`);
+    return api.get(`/practice/sessions/${id}`);
   },
 
   getStats: () => {
-    return api.get('/api/practice/stats');
+    return api.get('/practice/stats');
   },
 
   deleteSession: (id: number) => {
-    return api.delete(`/api/practice/sessions/${id}`);
+    return api.delete(`/practice/sessions/${id}`);
   }
 };
 

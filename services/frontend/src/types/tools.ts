@@ -12,6 +12,7 @@ export interface TunerState {
   tolerance: number;
   audioLevel: number;
   isDetecting: boolean;
+  streamRef: React.RefObject<MediaStream | null>; // Expose stream for recording
 }
 
 export interface TunerControls {

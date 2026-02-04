@@ -3,17 +3,17 @@ import { AuthResponse, LoginRequest, RegisterRequest, User } from '../types/auth
 
 export const authService = {
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/api/auth/register', data);
+    const response = await api.post<AuthResponse>('/auth/register', data);
     return response.data;
   },
 
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/api/auth/login', data);
+    const response = await api.post<AuthResponse>('/auth/login', data);
     return response.data;
   },
 
   async me(): Promise<User> {
-    const response = await api.get<User>('/api/auth/me');
+    const response = await api.get<User>('/auth/me');
     return response.data;
   },
 
