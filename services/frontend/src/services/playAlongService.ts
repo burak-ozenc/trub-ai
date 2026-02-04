@@ -66,7 +66,7 @@ export interface SessionStats {
  * Get all songs
  */
 export const getSongs = async (): Promise<Song[]> => {
-  const response = await api.get('/api/songs');
+  const response = await api.get('/songs');
   return response.data;
 };
 
@@ -74,7 +74,7 @@ export const getSongs = async (): Promise<Song[]> => {
  * Get song details by ID
  */
 export const getSongDetails = async (songId: number): Promise<Song> => {
-  const response = await api.get(`/api/songs/${songId}`);
+  const response = await api.get(`/songs/${songId}`);
   return response.data;
 };
 
@@ -82,7 +82,7 @@ export const getSongDetails = async (songId: number): Promise<Song> => {
  * Get MIDI file as blob
  */
 export const getSongMidi = async (songId: number, difficulty: Difficulty): Promise<Blob> => {
-  const response = await api.get(`/api/songs/${songId}/midi/${difficulty}`, {
+  const response = await api.get(`/songs/${songId}/midi/${difficulty}`, {
     responseType: 'blob'
   });
   return response.data;
@@ -92,7 +92,7 @@ export const getSongMidi = async (songId: number, difficulty: Difficulty): Promi
  * Get backing track as blob
  */
 export const getSongBackingTrack = async (songId: number): Promise<Blob> => {
-  const response = await api.get(`/api/songs/${songId}/audio/beginner`, {
+  const response = await api.get(`/songs/${songId}/audio/beginner`, {
     responseType: 'blob'
   });
   return response.data;
@@ -102,7 +102,7 @@ export const getSongBackingTrack = async (songId: number): Promise<Blob> => {
  * Get sheet music as blob
  */
 export const getSongSheetMusic = async (songId: number, difficulty: Difficulty): Promise<Blob> => {
-  const response = await api.get(`/api/songs/${songId}/sheet-music/${difficulty}`, {
+  const response = await api.get(`/songs/${songId}/sheet-music/${difficulty}`, {
     responseType: 'blob'
   });
   return response.data;
@@ -115,7 +115,7 @@ export const startPlayAlongSession = async (
   songId: number,
   difficulty: Difficulty
 ): Promise<PlayAlongSession> => {
-  const response = await api.post('/api/play-along/start', {
+  const response = await api.post('/play-along/start', {
     songId,
     difficulty
   });
@@ -126,7 +126,7 @@ export const startPlayAlongSession = async (
  * Get user's play-along sessions
  */
 export const getSessions = async (): Promise<SessionSummary[]> => {
-  const response = await api.get('/api/play-along/sessions');
+  const response = await api.get('/play-along/sessions');
   return response.data;
 };
 
@@ -134,7 +134,7 @@ export const getSessions = async (): Promise<SessionSummary[]> => {
  * Get a specific session by ID
  */
 export const getSessionById = async (sessionId: number): Promise<SessionSummary> => {
-  const response = await api.get(`/api/play-along/sessions/${sessionId}`);
+  const response = await api.get(`/play-along/sessions/${sessionId}`);
   return response.data;
 };
 
@@ -142,7 +142,7 @@ export const getSessionById = async (sessionId: number): Promise<SessionSummary>
  * Get user's play-along statistics
  */
 export const getStats = async (): Promise<SessionStats> => {
-  const response = await api.get('/api/play-along/stats');
+  const response = await api.get('/play-along/stats');
   return response.data;
 };
 
@@ -158,7 +158,7 @@ export const submitPerformance = async (
     durationSeconds: number;
   }
 ): Promise<void> => {
-  await api.post('/api/play-along/submit-performance', {
+  await api.post('/play-along/submit-performance', {
     sessionId,
     ...data
   });
@@ -168,13 +168,63 @@ export const submitPerformance = async (
  * Delete a session
  */
 export const deleteSession = async (sessionId: number): Promise<void> => {
-  await api.delete(`/api/play-along/sessions/${sessionId}`);
+  await api.delete(`/play-along/sessions/${sessionId}`);
 };
 
 /**
  * Get current user profile
  */
 export const getCurrentUser = async (): Promise<any> => {
-  const response = await api.get('/api/auth/me');
+  const response = await api.get('/auth/me');
   return response.data;
+};
+
+/**
+ * Save recording after PlayAlong session
+ */
+export const saveRecording = async (
+  sessionId: number,
+  audioBlob: Blob,
+  filename: string,
+  duration?: number
+): Promise<{ recordingId: number; s3Key: string; createdAt: string }> => {
+  const formData = new FormData();
+  formData.append('audio', audioBlob, filename);
+  formData.append('sessionId', sessionId.toString());
+  if (duration !== undefined) {
+    formData.append('duration', duration.toString());
+  }
+
+  const response = await api.post('/play-along/save-recording', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return response.data;
+};
+
+/**
+ * Get user's PlayAlong recordings
+ */
+export const getRecordings = async (): Promise<{
+  recordings: any[];
+  total: number;
+}> => {
+  const response = await api.get('/play-along/recordings');
+  return response.data;
+};
+
+/**
+ * Get presigned URL for recording playback
+ */
+export const getRecordingPlaybackUrl = async (recordingId: number): Promise<string> => {
+  const response = await api.get(`/play-along/recordings/${recordingId}/playback-url`);
+  return response.data.url;
+};
+
+/**
+ * Delete a recording
+ */
+export const deleteRecording = async (recordingId: number): Promise<void> => {
+  await api.delete(`/play-along/recordings/${recordingId}`);
 };

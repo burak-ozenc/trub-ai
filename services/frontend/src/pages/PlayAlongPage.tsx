@@ -1,11 +1,14 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
-import {Play, Pause, RotateCcw, Volume2, ChevronLeft} from 'lucide-react';
+import {Play, Pause, RotateCcw, Volume2, ChevronLeft, Mic, MicOff, Music} from 'lucide-react';
 import SheetMusicViewer from '../components/PlayAlong/SheetMusicViewer';
 import TunerWidget from '../components/tools/TunerWidget';
 import MetronomeWidget from '../components/tools/MetronomeWidget';
+import RecordingsModal from '../components/RecordingsModal';
 import {usePlaybackStore} from '../stores/playbackStore';
+import {useRecordingsStore} from '../stores/recordingsStore';
 import useTuner from '../hooks/useTuner';
+import {useRecorder} from '../hooks/useRecorder';
 import {useMidiPlayer} from '../hooks/useMidiPlayer';
 import {validateNote} from '../utils/noteValidator';
 import {findNoteIndexAtTime, convertMidiNoteToExpected} from '../utils/midiHelpers';
@@ -48,15 +51,116 @@ const PlayAlongPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [expectedNotes, setExpectedNotes] = useState<ExpectedNote[]>([]);
     const [user, setUser] = useState<any>(null);
+    const [recordingEnabled, setRecordingEnabled] = useState(false);
+    const [recordingsModalOpen, setRecordingsModalOpen] = useState(false);
 
     // Hooks
     const tuner = useTuner(user?.skillLevel || 'intermediate');
+    const recorder = useRecorder({ streamRef: tuner.streamRef });
+    const { addRecording } = useRecordingsStore();
+
+    // Helper function to upload recording
+    const uploadRecording = useCallback(async () => {
+        console.log('🔍 Upload check:', {
+            recordingEnabled,
+            isRecording: recorder.isRecording,
+            isPaused: recorder.isPaused,
+            hasBlob: !!recorder.recordingBlob,
+            hasBlobRef: !!recorder.recordingBlobRef.current,
+            blobSize: recorder.recordingBlob?.size,
+            blobRefSize: recorder.recordingBlobRef.current?.size,
+            duration: recorder.recordingDuration
+        });
+
+        if (!recordingEnabled) {
+            console.log('⏭️ Skipping recording upload (recording not enabled)');
+            return;
+        }
+
+        // Stop recording if it's still active
+        if (recorder.isRecording) {
+            console.log('🛑 Stopping recording...');
+            recorder.stopRecording();
+        }
+
+        // Wait for recording blob to be available (MediaRecorder onstop is async)
+        // Increased delay to 1000ms to ensure blob is created after stream stops
+        setTimeout(async () => {
+            // Use ref to get the blob immediately (avoids React closure issues)
+            const blob = recorder.recordingBlobRef.current;
+
+            console.log('⏰ Checking for blob after 1000ms delay:', {
+                hasBlob: !!recorder.recordingBlob,
+                hasBlobRef: !!blob,
+                blobSize: blob?.size,
+                hasSession: !!session,
+                hasSong: !!song
+            });
+
+            if (!blob) {
+                console.warn('⚠️ No recording blob available, skipping upload');
+                return;
+            }
+
+            if (!session || !song) {
+                console.warn('⚠️ Missing session or song data, cannot upload');
+                return;
+            }
+
+            try {
+                const filename = `playalong-${song.title.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.webm`;
+                console.log('📤 Uploading recording:', filename, `(${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
+
+                const result = await playAlongService.saveRecording(
+                    session.sessionId,
+                    blob,
+                    filename,
+                    recorder.recordingDuration
+                );
+
+                console.log('✅ Recording saved:', result);
+
+                // Add to recordings store
+                addRecording({
+                    id: result.recordingId,
+                    filename,
+                    duration: recorder.recordingDuration,
+                    createdAt: result.createdAt,
+                    playAlongSessions: [{
+                        id: session.sessionId,
+                        difficulty: difficulty as Difficulty,
+                        totalScore: sessionStats.overallAccuracy,
+                        pitchAccuracy: sessionStats.pitchAccuracy,
+                        rhythmAccuracy: sessionStats.durationAccuracy,
+                        song: {
+                            id: song.id,
+                            title: song.title,
+                            composer: song.composer || null
+                        }
+                    }]
+                });
+
+                // Clear recording
+                recorder.clearRecording();
+
+                alert('🎙️ Recording saved successfully!');
+            } catch (error) {
+                console.error('❌ Failed to save recording:', error);
+                alert('❌ Failed to save recording. Please try again.');
+            }
+        }, 1000); // Wait 1 second for blob to be created after stream stops
+    }, [recordingEnabled, recorder, session, song, difficulty, sessionStats, addRecording]);
 
     const midiPlayer = useMidiPlayer({
         songId: parseInt(songId!),
         difficulty: difficulty!,
         onEnded: () => {
             setPlaying(false);
+
+            // Upload recording BEFORE stopping tuner (tuner.stop() will stop the mic stream)
+            uploadRecording();
+
+            // Stop tuner after initiating recording upload
             tuner.stop();
 
             setTimeout(() => {
@@ -166,14 +270,34 @@ const PlayAlongPage: React.FC = () => {
 
     const handlePlayPause = async () => {
         if (isPlaying) {
+            // Pause playback
             midiPlayer.pause();
             setPlaying(false);
             tuner.stop();
+
+            // Upload recording if enabled
+            uploadRecording();
         } else {
+            // Start playback
             await AudioContextService.ensureRunning();
             await midiPlayer.play();
             setPlaying(true);
-            tuner.start();
+            await tuner.start(); // Tuner starts, mic stream is now available
+
+            // Start recording immediately after tuner starts (no delay)
+            if (recordingEnabled) {
+                console.log('🎙️ Starting recording immediately...');
+                recorder.startRecording();
+
+                // Check if recording actually started
+                setTimeout(() => {
+                    console.log('📊 Recording status after 100ms:', {
+                        isRecording: recorder.isRecording,
+                        error: recorder.error,
+                        duration: recorder.recordingDuration
+                    });
+                }, 100);
+            }
 
             if (playMode === 'wait') {
                 setTimeout(() => {
@@ -385,6 +509,13 @@ const PlayAlongPage: React.FC = () => {
 
                     <div className="flex items-center gap-2">
                         <button
+                            onClick={() => setRecordingsModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                        >
+                            <Music className="w-5 h-5" />
+                            My Recordings
+                        </button>
+                        <button
                             onClick={togglePlayMode}
                             className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                                 playMode === 'wait'
@@ -426,6 +557,29 @@ const PlayAlongPage: React.FC = () => {
                                         onChange={handleSeek}
                                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                                     />
+                                </div>
+
+                                {/* Recording Toggle */}
+                                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                                    <button
+                                        onClick={() => setRecordingEnabled(!recordingEnabled)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                                            recordingEnabled
+                                                ? 'bg-red-500 text-white hover:bg-red-600'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    >
+                                        {recordingEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                                        {recordingEnabled ? 'Recording Enabled' : 'Recording Disabled'}
+                                    </button>
+                                    {recorder.isRecording && (
+                                        <div className="flex items-center gap-2 text-red-600">
+                                            <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
+                                            <span className="text-sm font-semibold">
+                                                {Math.floor(recorder.recordingDuration / 60)}:{(recorder.recordingDuration % 60).toString().padStart(2, '0')}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Play/Pause and Controls */}
@@ -501,6 +655,9 @@ const PlayAlongPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Recordings Modal */}
+            <RecordingsModal isOpen={recordingsModalOpen} onClose={() => setRecordingsModalOpen(false)} />
         </div>
     );
 };
