@@ -10,6 +10,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@tonejs/midi": "^2.0.28",
     "axios": "^1.6.2",
     "dependencies": "^0.0.1",

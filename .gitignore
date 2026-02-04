@@ -86,3 +86,7 @@ legacy/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+
+# Server Files
+nginx.conf
