@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './User.entity';
 import { Song } from './Song.entity';
+import { Recording } from './Recording.entity';
 import { Difficulty } from './enums';
 
 @Entity('play_along_sessions')
@@ -45,6 +46,13 @@ export class PlayAlongSession {
 
   @Column({ type: 'varchar', nullable: true, name: 'recording_s3_key' })
   recordingS3Key: string | null;
+
+  @Column({ type: 'int', nullable: true, name: 'recording_id' })
+  recordingId: number | null;
+
+  @ManyToOne(() => Recording, { nullable: true })
+  @JoinColumn({ name: 'recording_id' })
+  recording: Recording | null;
 
   @Column({ type: 'timestamp', name: 'started_at' })
   startedAt: Date;

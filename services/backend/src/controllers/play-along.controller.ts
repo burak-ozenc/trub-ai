@@ -309,4 +309,170 @@ export class PlayAlongController {
       });
     }
   };
+
+  /**
+   * POST /api/play-along/save-recording
+   * Save recording after PlayAlong session
+   */
+  saveRecording = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req as any).user.id;
+      const { sessionId, duration } = req.body;
+      const file = req.file as S3UploadedFile;
+
+      if (!sessionId) {
+        res.status(400).json({
+          error: 'Bad Request',
+          message: 'sessionId is required'
+        });
+        return;
+      }
+
+      if (!file) {
+        res.status(400).json({
+          error: 'Bad Request',
+          message: 'Audio file is required'
+        });
+        return;
+      }
+
+      const recording = await this.playAlongService.saveRecording(
+        userId,
+        parseInt(sessionId),
+        file,
+        duration ? parseFloat(duration) : undefined
+      );
+
+      res.json({
+        message: 'Recording saved successfully',
+        recordingId: recording.id,
+        s3Key: recording.s3Key,
+        createdAt: recording.createdAt
+      });
+    } catch (error: any) {
+      console.error('Error saving recording:', error);
+
+      // Cleanup orphaned S3 object on error
+      if (req.file) {
+        const s3File = req.file as S3UploadedFile;
+        if (s3File.s3Key) {
+          const s3Service = new S3Service();
+          await s3Service.deleteObject(s3File.s3Key);
+          console.log('🗑️  Cleaned up orphaned S3 object after error');
+        }
+      }
+
+      if (error.message.includes('not found') || error.message.includes('permission')) {
+        res.status(404).json({
+          error: 'Not Found',
+          message: error.message
+        });
+      } else {
+        res.status(500).json({
+          error: 'Internal Server Error',
+          message: 'Failed to save recording'
+        });
+      }
+    }
+  };
+
+  /**
+   * GET /api/play-along/recordings
+   * Get user's PlayAlong recordings
+   */
+  getRecordings = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req as any).user.id;
+      const {
+        skip = 0,
+        limit = 50,
+        sortBy = 'createdAt',
+        sortOrder = 'DESC'
+      } = req.query;
+
+      const result = await this.playAlongService.getUserRecordings(userId, {
+        skip: parseInt(skip as string),
+        limit: parseInt(limit as string),
+        sortBy: sortBy as 'createdAt' | 'duration',
+        sortOrder: sortOrder as 'ASC' | 'DESC'
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching recordings:', error);
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: 'Failed to fetch recordings'
+      });
+    }
+  };
+
+  /**
+   * GET /api/play-along/recordings/:id/playback-url
+   * Get presigned URL for recording playback
+   */
+  getRecordingPlaybackUrl = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req as any).user.id;
+      const { id } = req.params;
+
+      const url = await this.playAlongService.getRecordingPlaybackUrl(
+        parseInt(id),
+        userId
+      );
+
+      res.json({ url });
+    } catch (error: any) {
+      console.error('Error getting playback URL:', error);
+
+      if (error.message.includes('not found') || error.message.includes('permission')) {
+        res.status(404).json({
+          error: 'Not Found',
+          message: error.message
+        });
+      } else if (error.message.includes('S3 key')) {
+        res.status(400).json({
+          error: 'Bad Request',
+          message: error.message
+        });
+      } else {
+        res.status(500).json({
+          error: 'Internal Server Error',
+          message: 'Failed to generate playback URL'
+        });
+      }
+    }
+  };
+
+  /**
+   * DELETE /api/play-along/recordings/:id
+   * Delete a recording
+   */
+  deleteRecording = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = (req as any).user.id;
+      const { id } = req.params;
+
+      const success = await this.playAlongService.deleteRecording(
+        parseInt(id),
+        userId
+      );
+
+      if (!success) {
+        res.status(404).json({
+          error: 'Not Found',
+          message: 'Recording not found'
+        });
+        return;
+      }
+
+      res.json({ message: 'Recording deleted successfully' });
+    } catch (error: any) {
+      console.error('Error deleting recording:', error);
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: 'Failed to delete recording'
+      });
+    }
+  };
 }

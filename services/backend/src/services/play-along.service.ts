@@ -2,6 +2,7 @@ import { Repository } from 'typeorm';
 import { AppDataSource } from '../database/data-source';
 import { PlayAlongSession } from '../entities/PlayAlongSession.entity';
 import { Song } from '../entities/Song.entity';
+import { Recording } from '../entities/Recording.entity';
 import { Difficulty } from '../entities/enums';
 import {
   StartSessionResponse,
@@ -11,14 +12,20 @@ import {
   SessionDetailResponse,
   SessionStatsResponse
 } from '../types/play-along.types';
+import { S3Service } from './s3.service';
+import { S3UploadedFile } from '../middleware/s3-upload.middleware';
 
 export class PlayAlongService {
   private sessionRepository: Repository<PlayAlongSession>;
   private songRepository: Repository<Song>;
+  private recordingRepository: Repository<Recording>;
+  private s3Service: S3Service;
 
   constructor() {
     this.sessionRepository = AppDataSource.getRepository(PlayAlongSession);
     this.songRepository = AppDataSource.getRepository(Song);
+    this.recordingRepository = AppDataSource.getRepository(Recording);
+    this.s3Service = new S3Service();
   }
 
   /**
@@ -255,6 +262,136 @@ export class PlayAlongService {
     }
 
     await this.sessionRepository.remove(session);
+    return true;
+  }
+
+  /**
+   * Save recording and link to PlayAlongSession
+   */
+  async saveRecording(
+    userId: number,
+    sessionId: number,
+    file: S3UploadedFile,
+    duration?: number
+  ): Promise<Recording> {
+    // Verify session exists and belongs to user
+    const session = await this.sessionRepository.findOne({
+      where: { id: sessionId, userId: userId }
+    });
+
+    if (!session) {
+      throw new Error('Session not found or you don\'t have permission to access it');
+    }
+
+    // Create recording entity
+    const recording = this.recordingRepository.create({
+      userId,
+      filename: file.originalname,
+      audioFilePath: file.s3Url,
+      s3Key: file.s3Key,
+      s3Bucket: file.s3Bucket,
+      duration: duration || null,
+      analysisType: 'playalong',
+      guidance: null,
+      analysisResults: null
+    });
+
+    await this.recordingRepository.save(recording);
+
+    // Link recording to session
+    session.recordingId = recording.id;
+    session.recordingS3Key = file.s3Key;
+    await this.sessionRepository.save(session);
+
+    return recording;
+  }
+
+  /**
+   * Get user's recordings with optional pagination and filtering
+   */
+  async getUserRecordings(
+    userId: number,
+    options?: {
+      skip?: number;
+      limit?: number;
+      sortBy?: 'createdAt' | 'duration';
+      sortOrder?: 'ASC' | 'DESC';
+    }
+  ): Promise<{ recordings: Recording[]; total: number }> {
+    const {
+      skip = 0,
+      limit = 50,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC'
+    } = options || {};
+
+    const query = this.recordingRepository
+      .createQueryBuilder('recording')
+      .leftJoinAndSelect('recording.playAlongSessions', 'session')
+      .leftJoinAndSelect('session.song', 'song')
+      .where('recording.userId = :userId', { userId })
+      .andWhere('recording.analysisType = :analysisType', { analysisType: 'playalong' });
+
+    query
+      .orderBy(`recording.${sortBy}`, sortOrder)
+      .skip(skip)
+      .take(limit);
+
+    const [recordings, total] = await query.getManyAndCount();
+
+    return { recordings, total };
+  }
+
+  /**
+   * Get recording playback URL (presigned S3 URL)
+   */
+  async getRecordingPlaybackUrl(recordingId: number, userId: number): Promise<string> {
+    const recording = await this.recordingRepository.findOne({
+      where: { id: recordingId, userId: userId }
+    });
+
+    if (!recording) {
+      throw new Error('Recording not found or you don\'t have permission to access it');
+    }
+
+    if (!recording.s3Key) {
+      throw new Error('Recording does not have an S3 key');
+    }
+
+    // Generate presigned URL (15 minutes expiry)
+    const url = await this.s3Service.getPresignedUrl(recording.s3Key, 900);
+    return url;
+  }
+
+  /**
+   * Delete recording from database and S3
+   */
+  async deleteRecording(recordingId: number, userId: number): Promise<boolean> {
+    const recording = await this.recordingRepository.findOne({
+      where: { id: recordingId, userId: userId },
+      relations: ['playAlongSessions']
+    });
+
+    if (!recording) {
+      return false;
+    }
+
+    // Unlink from PlayAlongSessions
+    if (recording.playAlongSessions && recording.playAlongSessions.length > 0) {
+      for (const session of recording.playAlongSessions) {
+        session.recordingId = null;
+        session.recordingS3Key = null;
+        await this.sessionRepository.save(session);
+      }
+    }
+
+    // Delete from S3
+    if (recording.s3Key) {
+      await this.s3Service.deleteObject(recording.s3Key);
+    }
+
+    // Delete from database
+    await this.recordingRepository.remove(recording);
     return true;
   }
 }

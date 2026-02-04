@@ -25,6 +25,30 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+// Logging middleware for registration endpoint
+app.use((req, _res, next) => {
+  if (req.path.includes("/auth/register")) {
+    console.log("REGISTER:", req.method, req.path, req.body);
+  }
+  next();
+});
+
+app.use((req, _res, next) => {
+  if (req.originalUrl.includes("/api/auth/register")) {
+    console.log("CT:", req.headers["content-type"]);
+  }
+  next();
+});
+
+app.use((req, _res, next) => {
+  if (req.originalUrl.includes("/api/auth/register")) {
+    console.log("AFTER JSON PARSER body =", req.body);
+  }
+  next();
+});
+
+
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
@@ -47,6 +71,7 @@ app.get('/', (_req: Request, res: Response) => {
     }
   });
 });
+
 
 // API routes
 app.use('/api/auth', authRoutes);

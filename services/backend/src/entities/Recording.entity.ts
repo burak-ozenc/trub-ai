@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { User } from './User.entity';
 import { PracticeSession } from './PracticeSession.entity';
+import { PlayAlongSession } from './PlayAlongSession.entity';
 
 @Entity('recordings')
 export class Recording {
@@ -43,4 +44,7 @@ export class Recording {
 
   @OneToMany(() => PracticeSession, (session) => session.recording)
   practiceSessions: PracticeSession[];
+
+  @OneToMany(() => PlayAlongSession, (session) => session.recording)
+  playAlongSessions: PlayAlongSession[];
 }
