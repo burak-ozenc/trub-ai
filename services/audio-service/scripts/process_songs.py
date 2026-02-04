@@ -21,6 +21,12 @@ Usage:
 
 from __future__ import annotations
 
+import os, sys
+print("DEBUG container python:", sys.executable)
+print("DEBUG cwd:", os.getcwd())
+print("DEBUG sys.path[0:3]:", sys.path[:3])
+
+
 import argparse
 import json
 import logging
